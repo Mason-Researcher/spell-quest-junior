@@ -11,6 +11,20 @@ CLOUDFLARE_ACCOUNT_ID
 CLOUDFLARE_API_TOKEN
 ```
 
+Create `CLOUDFLARE_API_TOKEN` in Cloudflare Dashboard with:
+
+```text
+Token type: Custom token
+Permissions: Account -> Cloudflare Pages -> Edit
+Account resources: Include -> Hch120606@gmail.com's Account
+```
+
+Then add it to GitHub:
+
+```powershell
+gh secret set CLOUDFLARE_API_TOKEN --repo Mason-Researcher/spell-quest-junior
+```
+
 The workflow file is:
 
 ```text
