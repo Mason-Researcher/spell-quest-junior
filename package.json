@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "deploy": "wrangler pages deploy site --project-name spell-quest-junior --branch main"
+  },
   "devDependencies": {
     "wrangler": "4.88.0"
   }

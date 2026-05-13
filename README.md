@@ -2,6 +2,12 @@
 
 Cloudflare Pages deployment repository for the Grade 2 spelling practice website.
 
+Production site:
+
+```text
+https://spell-quest-junior.pages.dev/
+```
+
 ## Cloudflare Pages Settings
 
 Use these settings when creating the Pages project:
@@ -27,6 +33,12 @@ Open:
 http://127.0.0.1:4173/
 ```
 
+## Deploy
+
+```powershell
+npm run deploy
+```
+
 ## Data Expansion
 
 Runtime data is under:
@@ -43,4 +55,3 @@ All cards and exam questions must resolve to records in `site/data/words.json`.
 
 The website plays high-quality MP3 clips first through `site/data/audio-manifest.json`.
 If no MP3 exists, the browser speech engine is used as fallback.
-
