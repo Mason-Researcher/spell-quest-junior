@@ -16,10 +16,37 @@ const REQUIRED_WORD_FIELDS = [
 
 const ALLOWED_LEVELS = ["starter", "bridge", "challenge"];
 
+const SPEECH_SETTINGS = {
+  volume: 1,
+  pitch: 1.08,
+  clipStartTimeoutMs: 900,
+  speechStartDelayMs: 20,
+  speechRestartCheckMs: 350
+};
+
+const ENGLISH_VOICE_HINTS = [
+  "microsoft jenny",
+  "microsoft aria",
+  "microsoft guy",
+  "google us english",
+  "microsoft david",
+  "microsoft zira"
+];
+
+const CHINESE_VOICE_HINTS = [
+  "microsoft hanhan",
+  "microsoft yating",
+  "microsoft tracy",
+  "google mandarin",
+  "google chinese"
+];
+
 const state = {
   manifest: null,
   audioManifest: null,
   activeAudio: null,
+  speechVoices: [],
+  speechToken: 0,
   words: [],
   wordById: new Map(),
   filteredWords: [],
@@ -376,16 +403,122 @@ function shuffleArray(items) {
   return output;
 }
 
+function refreshSpeechVoices() {
+  if (!window.speechSynthesis) {
+    return [];
+  }
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    state.speechVoices = voices;
+  }
+  return state.speechVoices;
+}
+
+function selectSpeechVoice(lang) {
+  const voices = refreshSpeechVoices();
+  if (voices.length === 0) {
+    return null;
+  }
+  const targetLang = (lang || "").toLowerCase();
+  const targetPrefix = targetLang.split("-")[0];
+  const hints = targetPrefix === "zh" ? CHINESE_VOICE_HINTS : ENGLISH_VOICE_HINTS;
+  for (const hint of hints) {
+    const matchedVoice = voices.find((voice) => voice.name.toLowerCase().includes(hint));
+    if (matchedVoice) {
+      return matchedVoice;
+    }
+  }
+  const exactLocalVoice = voices.find((voice) => voice.localService && voice.lang.toLowerCase() === targetLang);
+  if (exactLocalVoice) {
+    return exactLocalVoice;
+  }
+  const exactVoice = voices.find((voice) => voice.lang.toLowerCase() === targetLang);
+  if (exactVoice) {
+    return exactVoice;
+  }
+  const prefixLocalVoice = voices.find((voice) => voice.localService && voice.lang.toLowerCase().startsWith(targetPrefix));
+  if (prefixLocalVoice) {
+    return prefixLocalVoice;
+  }
+  return voices.find((voice) => voice.lang.toLowerCase().startsWith(targetPrefix)) || null;
+}
+
+function primeSpeechEngine() {
+  if (!window.speechSynthesis) {
+    return;
+  }
+  refreshSpeechVoices();
+  window.speechSynthesis.resume();
+}
+
+function stopSpeechPlayback() {
+  state.speechToken += 1;
+  if (!window.speechSynthesis) {
+    return;
+  }
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending || window.speechSynthesis.paused) {
+    window.speechSynthesis.cancel();
+  }
+  window.speechSynthesis.resume();
+}
+
+function initSpeechEngine() {
+  if (!window.speechSynthesis) {
+    return;
+  }
+  refreshSpeechVoices();
+  window.speechSynthesis.addEventListener("voiceschanged", refreshSpeechVoices);
+  const primeOnce = () => primeSpeechEngine();
+  window.addEventListener("pointerdown", primeOnce, { once: true });
+  window.addEventListener("keydown", primeOnce, { once: true });
+  window.addEventListener("touchstart", primeOnce, { once: true });
+}
+
 function speakText(text, lang, rate) {
   if (!window.speechSynthesis || !text) {
     return false;
   }
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = lang;
-  utterance.rate = rate;
-  utterance.pitch = 1.04;
-  window.speechSynthesis.speak(utterance);
+  stopActiveAudio();
+  stopSpeechPlayback();
+  const speechToken = state.speechToken;
+  const speechText = String(text).trim();
+  if (!speechText) {
+    return false;
+  }
+  const speakNow = () => {
+    if (speechToken !== state.speechToken) {
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(speechText);
+    utterance.lang = lang;
+    utterance.rate = rate;
+    utterance.pitch = SPEECH_SETTINGS.pitch;
+    utterance.volume = SPEECH_SETTINGS.volume;
+    const voice = selectSpeechVoice(lang);
+    if (voice) {
+      utterance.voice = voice;
+    }
+    window.speechSynthesis.resume();
+    window.speechSynthesis.speak(utterance);
+    window.setTimeout(() => {
+      if (speechToken !== state.speechToken) {
+        return;
+      }
+      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+        const retryUtterance = new SpeechSynthesisUtterance(speechText);
+        retryUtterance.lang = lang;
+        retryUtterance.rate = rate;
+        retryUtterance.pitch = SPEECH_SETTINGS.pitch;
+        retryUtterance.volume = SPEECH_SETTINGS.volume;
+        if (voice) {
+          retryUtterance.voice = voice;
+        }
+        window.speechSynthesis.resume();
+        window.speechSynthesis.speak(retryUtterance);
+      }
+    }, SPEECH_SETTINGS.speechRestartCheckMs);
+  };
+  window.setTimeout(speakNow, SPEECH_SETTINGS.speechStartDelayMs);
   return true;
 }
 
@@ -411,14 +544,40 @@ function stopActiveAudio() {
 function playStaticAudio(path) {
   return new Promise((resolve) => {
     stopActiveAudio();
+    stopSpeechPlayback();
     const audio = new Audio(path);
     state.activeAudio = audio;
     audio.preload = "auto";
-    audio.onended = () => resolve(true);
-    audio.onerror = () => resolve(false);
+    audio.volume = SPEECH_SETTINGS.volume;
+    let settled = false;
+    let started = false;
+    const finish = (played) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      window.clearTimeout(startTimer);
+      if (state.activeAudio === audio) {
+        state.activeAudio = null;
+      }
+      resolve(played);
+    };
+    const startTimer = window.setTimeout(() => {
+      if (!started) {
+        audio.pause();
+        finish(false);
+      }
+    }, SPEECH_SETTINGS.clipStartTimeoutMs);
+    audio.onplaying = () => {
+      started = true;
+      window.clearTimeout(startTimer);
+    };
+    audio.onended = () => finish(true);
+    audio.onerror = () => finish(false);
+    audio.load();
     const playResult = audio.play();
     if (playResult && typeof playResult.catch === "function") {
-      playResult.catch(() => resolve(false));
+      playResult.catch(() => finish(false));
     }
   });
 }
@@ -750,6 +909,8 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  initSpeechEngine();
+  elements.sourceAudio.volume = SPEECH_SETTINGS.volume;
   try {
     state.words = await loadWordDatabase();
     rebuildWordIndex();
