@@ -39,6 +39,18 @@ http://127.0.0.1:4173/
 npm run deploy
 ```
 
+## GitHub Auto Deploy
+
+This repository includes `.github/workflows/cloudflare-pages.yml`.
+Every push to `main` runs `npm ci` and deploys `site/` to Cloudflare Pages with the locked `wrangler` version in `package-lock.json`.
+
+Required GitHub repository secrets:
+
+```text
+CLOUDFLARE_ACCOUNT_ID
+CLOUDFLARE_API_TOKEN
+```
+
 ## Data Expansion
 
 Runtime data is under:
