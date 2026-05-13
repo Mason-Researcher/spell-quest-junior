@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 410" role="img" aria-labelledby="title desc">
+  <title id="title">Original platform world map</title>
+  <desc id="desc">A colorful spelling world map with coin paths, brick stages, hills, and a finish flag.</desc>
+  <rect width="520" height="410" rx="24" fill="#8ed8ff"/>
+  <g fill="#fff" opacity=".9">
+    <rect x="42" y="58" width="114" height="34" rx="17"/>
+    <circle cx="78" cy="56" r="24"/>
+    <circle cx="128" cy="50" r="20"/>
+  </g>
+  <path d="M0 320 C88 266 164 286 242 320 C326 356 408 350 520 300 L520 410 L0 410 Z" fill="#67cf63"/>
+  <path d="M34 330 C112 270 188 338 258 292 C332 244 388 302 482 250" fill="none" stroke="#fff8dd" stroke-width="18" stroke-linecap="round" stroke-dasharray="2 34"/>
+  <g transform="translate(54 104)">
+    <rect x="0" y="0" width="118" height="74" rx="8" fill="#c56a3e" stroke="#17233a" stroke-width="5"/>
+    <path d="M0 37 H118 M39 0 V74 M78 0 V74" stroke="#8f4528" stroke-width="5"/>
+    <rect x="22" y="16" width="74" height="42" rx="7" fill="#fff" stroke="#17233a" stroke-width="4"/>
+    <path d="M35 37 H84" stroke="#ef5f50" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(220 66)">
+    <rect x="0" y="0" width="108" height="92" rx="8" fill="#ffcf51" stroke="#17233a" stroke-width="5"/>
+    <circle cx="54" cy="46" r="26" fill="#7351b8"/>
+    <path d="M41 46 H67" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(374 136)">
+    <rect x="0" y="36" width="104" height="72" rx="8" fill="#fff8dd" stroke="#17233a" stroke-width="5"/>
+    <path d="M6 36 L52 4 L98 36 Z" fill="#ef5f50" stroke="#17233a" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="42" y="68" width="24" height="40" fill="#2f77c8"/>
+  </g>
+  <g transform="translate(126 246)">
+    <circle cx="54" cy="54" r="50" fill="#fff8dd" stroke="#17233a" stroke-width="5"/>
+    <path d="M24 62 C41 29 68 29 85 62" fill="none" stroke="#ef5f50" stroke-width="9" stroke-linecap="round"/>
+    <path d="M30 78 H78" stroke="#2f77c8" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(306 262)">
+    <circle cx="22" cy="38" r="20" fill="#ffd34d" stroke="#d99b18" stroke-width="5"/>
+    <circle cx="72" cy="38" r="20" fill="#ffd34d" stroke="#d99b18" stroke-width="5"/>
+    <path d="M122 2 V96" stroke="#17233a" stroke-width="7" stroke-linecap="round"/>
+    <path d="M126 10 L190 34 L126 58 Z" fill="#35aa5d" stroke="#17233a" stroke-width="5" stroke-linejoin="round"/>
+  </g>
+  <rect x="0" y="374" width="520" height="36" fill="#c56a3e"/>
+  <path d="M0 392 H520 M36 374 V410 M88 374 V410 M140 374 V410 M192 374 V410 M244 374 V410 M296 374 V410 M348 374 V410 M400 374 V410 M452 374 V410" stroke="#8f4528" stroke-width="5"/>
+</svg>

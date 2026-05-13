@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "2026.1",
+  "id": "core-spelling",
+  "title": "Core Spelling Bee Pack",
+  "titleZh": "核心拼字題庫",
+  "titleZhuyin": "ㄏㄜˊ ㄒㄧㄣ ㄆㄧㄣ ㄗˋ ㄊㄧˊ ㄎㄨˋ",
+  "wordBankId": "core",
+  "strategy": "all",
+  "modes": ["practice", "exam"],
+  "questionTypes": ["word-card", "letter-bank-spelling"],
+  "description": "All practice cards and exam questions are generated from the referenced word bank."
+}

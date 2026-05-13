@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "2026.1",
+  "audioRoot": "assets/audio/generated",
+  "generatedBy": "tools/generate_tts_manifest.py",
+  "fallback": "browser-speechSynthesis",
+  "clips": {}
+}

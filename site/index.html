@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spell Quest Junior</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="app-header">
+    <div class="platform-cloud cloud-a" aria-hidden="true"></div>
+    <div class="platform-cloud cloud-b" aria-hidden="true"></div>
+    <div class="coin-row" aria-hidden="true">
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div class="hero-copy">
+      <p class="eyebrow">Spell Quest Junior</p>
+      <h1>Spelling Bee Adventure</h1>
+      <p class="hero-note">
+        <ruby>國小二年級<rt>ㄍㄨㄛˊ ㄒㄧㄠˇ ㄦˋ ㄋㄧㄢˊ ㄐㄧˊ</rt></ruby>
+        <span>/ Grade 2</span>
+        <span>spelling practice lab</span>
+      </p>
+      <div class="hero-actions" role="navigation" aria-label="Primary modes">
+        <button class="mode-tab active" type="button" data-mode="practice">
+          <span class="button-icon" aria-hidden="true"></span>
+          <ruby>練習模式<rt>ㄌㄧㄢˋ ㄒㄧˊ ㄇㄛˊ ㄕˋ</rt></ruby>
+        </button>
+        <button class="mode-tab" type="button" data-mode="exam">
+          <span class="button-icon trophy" aria-hidden="true"></span>
+          <ruby>考試模式<rt>ㄎㄠˇ ㄕˋ ㄇㄛˊ ㄕˋ</rt></ruby>
+        </button>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <img src="assets/images/adventure-mascot.svg" alt="">
+    </div>
+  </header>
+
+  <main id="main" class="layout">
+    <aside class="side-panel" aria-label="Learning dashboard">
+      <img class="world-map" src="assets/images/world-map.svg" alt="">
+      <section class="stat-grid" aria-label="Progress">
+        <div>
+          <strong id="totalWords">0</strong>
+          <span><ruby>單字<rt>ㄉㄢ ㄗˋ</rt></ruby></span>
+        </div>
+        <div>
+          <strong id="knownWords">0</strong>
+          <span><ruby>已熟<rt>ㄧˇ ㄕㄨˊ</rt></ruby></span>
+        </div>
+        <div>
+          <strong id="starWords">0</strong>
+          <span><ruby>重點<rt>ㄓㄨㄥˋ ㄉㄧㄢˇ</rt></ruby></span>
+        </div>
+      </section>
+      <section class="audio-panel">
+        <h2><ruby>錄音參考<rt>ㄌㄨˋ ㄧㄣ ㄘㄢ ㄎㄠˇ</rt></ruby></h2>
+        <label for="audioSelect"><ruby>考題音檔<rt>ㄎㄠˇ ㄊㄧˊ ㄧㄣ ㄉㄤˇ</rt></ruby></label>
+        <select id="audioSelect">
+          <option value="assets/audio/intermediate-mock-test-2.m4a">Intermediate Mock Test 2</option>
+          <option value="assets/audio/advanced-mock-test-2.m4a">Advanced Mock Test 2</option>
+        </select>
+        <audio id="sourceAudio" controls preload="metadata" src="assets/audio/intermediate-mock-test-2.m4a"></audio>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <section class="toolbar" aria-label="Filters">
+        <label>
+          <span><ruby>搜尋<rt>ㄙㄡ ㄒㄩㄣˊ</rt></ruby></span>
+          <input id="searchInput" type="search" placeholder="word, topic, source">
+        </label>
+        <label>
+          <span><ruby>程度<rt>ㄔㄥˊ ㄉㄨˋ</rt></ruby></span>
+          <select id="levelFilter">
+            <option value="all">全部（ㄑㄩㄢˊ ㄅㄨˋ）</option>
+            <option value="starter">starter</option>
+            <option value="bridge">bridge</option>
+            <option value="challenge">challenge</option>
+          </select>
+        </label>
+        <label>
+          <span><ruby>主題<rt>ㄓㄨˇ ㄊㄧˊ</rt></ruby></span>
+          <select id="topicFilter">
+            <option value="all">全部（ㄑㄩㄢˊ ㄅㄨˋ）</option>
+          </select>
+        </label>
+        <button id="shuffleButton" class="icon-button" type="button" title="Shuffle">
+          <span class="button-icon shuffle" aria-hidden="true"></span>
+          <ruby>洗牌<rt>ㄒㄧˇ ㄆㄞˊ</rt></ruby>
+        </button>
+      </section>
+
+      <section id="practiceView" class="mode-view active" aria-label="Practice mode">
+        <article class="word-card">
+          <div class="card-topline">
+            <span id="wordSource" class="pill">source</span>
+            <span id="wordLevel" class="pill level">level</span>
+            <span id="wordStar" class="pill star hidden"><ruby>重點<rt>ㄓㄨㄥˋ ㄉㄧㄢˇ</rt></ruby></span>
+          </div>
+          <div class="word-main">
+            <div>
+              <p class="card-label"><ruby>今日單字<rt>ㄐㄧㄣ ㄖˋ ㄉㄢ ㄗˋ</rt></ruby></p>
+              <h2 id="wordText">word</h2>
+              <p id="wordPos" class="pos">pos</p>
+            </div>
+            <button id="speakButton" class="round-button" type="button" title="Speak word" aria-label="Speak word">
+              <span class="speaker-icon" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="meaning-grid">
+            <section>
+              <div class="section-heading">
+                <h3><ruby>意思<rt>ㄧˋ ㄙ˙</rt></ruby></h3>
+                <button id="speakMeaningZh" class="mini-speak" type="button">
+                  <span class="speaker-icon mini" aria-hidden="true"></span>
+                  <ruby>中文<rt>ㄓㄨㄥ ㄨㄣˊ</rt></ruby>
+                </button>
+              </div>
+              <p id="meaningText">meaning</p>
+            </section>
+            <section>
+              <div class="section-heading">
+                <h3><ruby>情境<rt>ㄑㄧㄥˊ ㄐㄧㄥˋ</rt></ruby></h3>
+                <button id="speakTopicZh" class="mini-speak" type="button">
+                  <span class="speaker-icon mini" aria-hidden="true"></span>
+                  <ruby>中文<rt>ㄓㄨㄥ ㄨㄣˊ</rt></ruby>
+                </button>
+              </div>
+              <p id="topicText">topic</p>
+            </section>
+          </div>
+          <section class="example-box">
+            <div class="section-heading">
+              <h3><ruby>英文例句<rt>ㄧㄥ ㄨㄣˊ ㄌㄧˋ ㄐㄩˋ</rt></ruby></h3>
+              <div class="speak-pair">
+                <button id="speakExampleEn" class="mini-speak" type="button">
+                  <span class="speaker-icon mini" aria-hidden="true"></span>
+                  EN
+                </button>
+                <button id="speakExampleZh" class="mini-speak zh" type="button">
+                  <span class="speaker-icon mini" aria-hidden="true"></span>
+                  <ruby>中文<rt>ㄓㄨㄥ ㄨㄣˊ</rt></ruby>
+                </button>
+              </div>
+            </div>
+            <p id="exampleText">Example sentence.</p>
+            <p id="exampleZhHint" class="zh-hint">中文提示</p>
+          </section>
+          <section class="example-box muted">
+            <div class="section-heading">
+              <h3><ruby>應用任務<rt>ㄧㄥˋ ㄩㄥˋ ㄖㄣˋ ㄨˋ</rt></ruby></h3>
+              <div class="speak-pair">
+                <button id="speakUsageEn" class="mini-speak" type="button">
+                  <span class="speaker-icon mini" aria-hidden="true"></span>
+                  EN
+                </button>
+                <button id="speakUsageZh" class="mini-speak zh" type="button">
+                  <span class="speaker-icon mini" aria-hidden="true"></span>
+                  <ruby>中文<rt>ㄓㄨㄥ ㄨㄣˊ</rt></ruby>
+                </button>
+              </div>
+            </div>
+            <p id="usageText">Usage prompt.</p>
+            <p id="usageZhHint" class="zh-hint">中文任務</p>
+          </section>
+          <div class="letter-strip" id="practiceLetters" aria-label="Word letters"></div>
+          <div class="card-actions">
+            <button id="prevButton" type="button"><ruby>上一張<rt>ㄕㄤˋ ㄧˋ ㄓㄤ</rt></ruby></button>
+            <button id="knownButton" type="button"><ruby>標記已熟<rt>ㄅㄧㄠ ㄐㄧˋ ㄧˇ ㄕㄨˊ</rt></ruby></button>
+            <button id="nextButton" type="button"><ruby>下一張<rt>ㄒㄧㄚˋ ㄧˋ ㄓㄤ</rt></ruby></button>
+          </div>
+        </article>
+      </section>
+
+      <section id="examView" class="mode-view" aria-label="Exam mode">
+        <article class="exam-card">
+          <div class="exam-header">
+            <div>
+              <p class="card-label"><ruby>測驗卡<rt>ㄘㄜˋ ㄧㄢˋ ㄎㄚˇ</rt></ruby></p>
+              <h2><ruby>聽音拼字<rt>ㄊㄧㄥ ㄧㄣ ㄆㄧㄣ ㄗˋ</rt></ruby></h2>
+            </div>
+            <div class="score-pill"><span id="examScore">0</span> / <span id="examTotal">0</span></div>
+          </div>
+          <p class="exam-note">
+            <ruby>先聽發音，再用字母卡拼出答案。<rt>ㄒㄧㄢ ㄊㄧㄥ ㄈㄚ ㄧㄣ，ㄗㄞˋ ㄩㄥˋ ㄗˋ ㄇㄨˇ ㄎㄚˇ ㄆㄧㄣ ㄔㄨ ㄉㄚˊ ㄢˋ。</rt></ruby>
+          </p>
+          <div class="exam-controls">
+            <button id="playExamWord" class="icon-button" type="button">
+              <span class="speaker-icon small" aria-hidden="true"></span>
+              <ruby>播放單字<rt>ㄅㄛ ㄈㄤˋ ㄉㄢ ㄗˋ</rt></ruby>
+            </button>
+            <button id="playExamHintZh" class="icon-button" type="button">
+              <span class="speaker-icon small" aria-hidden="true"></span>
+              <ruby>播放提示<rt>ㄅㄛ ㄈㄤˋ ㄊㄧˊ ㄕˋ</rt></ruby>
+            </button>
+            <button id="newExamButton" class="icon-button" type="button">
+              <span class="button-icon shuffle" aria-hidden="true"></span>
+              <ruby>重新出題<rt>ㄔㄨㄥˊ ㄒㄧㄣ ㄔㄨ ㄊㄧˊ</rt></ruby>
+            </button>
+          </div>
+          <div id="answerSlots" class="answer-slots" aria-label="Answer slots"></div>
+          <div id="letterBank" class="letter-bank" aria-label="Letter bank"></div>
+          <div id="examFeedback" class="feedback" role="status"></div>
+          <div class="card-actions">
+            <button id="eraseButton" type="button"><ruby>退一格<rt>ㄊㄨㄟˋ ㄧˋ ㄍㄜˊ</rt></ruby></button>
+            <button id="checkButton" type="button"><ruby>檢查答案<rt>ㄐㄧㄢˇ ㄔㄚˊ ㄉㄚˊ ㄢˋ</rt></ruby></button>
+            <button id="nextExamButton" type="button"><ruby>下一題<rt>ㄒㄧㄚˋ ㄧˋ ㄊㄧˊ</rt></ruby></button>
+          </div>
+          <section class="exam-hint">
+            <h3><ruby>提示<rt>ㄊㄧˊ ㄕˋ</rt></ruby></h3>
+            <p id="examHint">hint</p>
+          </section>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <template id="letterTemplate">
+    <button class="letter-tile" type="button"></button>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

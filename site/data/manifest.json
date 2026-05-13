@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "2026.1",
+  "wordBanks": [
+    {
+      "id": "core",
+      "path": "data/words.json",
+      "description": "Curated spelling bee words from the source sheets."
+    }
+  ],
+  "audioManifests": [
+    {
+      "id": "teacher-audio",
+      "path": "data/audio-manifest.json",
+      "description": "Optional high quality teacher voice MP3 clips. Browser speech is used only as fallback."
+    }
+  ],
+  "questionPacks": [
+    {
+      "id": "core-spelling",
+      "path": "data/question-packs/core-spelling.json"
+    }
+  ]
+}

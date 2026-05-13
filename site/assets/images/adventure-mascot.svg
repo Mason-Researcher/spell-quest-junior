@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 430" role="img" aria-labelledby="title desc">
+  <title id="title">Original platform spelling adventure scene</title>
+  <desc id="desc">A bright original platform game inspired spelling scene with coins, blocks, hills, a flag, and a child explorer.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#83d8ff"/>
+      <stop offset="1" stop-color="#f9f4b9"/>
+    </linearGradient>
+    <linearGradient id="hill" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#2fac67"/>
+      <stop offset="1" stop-color="#76d568"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="430" rx="28" fill="url(#sky)"/>
+  <g fill="#fff" opacity=".85">
+    <rect x="42" y="64" width="120" height="36" rx="18"/>
+    <circle cx="76" cy="62" r="28"/>
+    <circle cx="128" cy="57" r="22"/>
+    <rect x="500" y="96" width="122" height="36" rx="18"/>
+    <circle cx="536" cy="94" r="28"/>
+    <circle cx="594" cy="88" r="24"/>
+  </g>
+  <g>
+    <circle cx="520" cy="74" r="24" fill="#ffd34d" stroke="#d99b18" stroke-width="6"/>
+    <circle cx="574" cy="74" r="24" fill="#ffd34d" stroke="#d99b18" stroke-width="6"/>
+    <circle cx="628" cy="74" r="24" fill="#ffd34d" stroke="#d99b18" stroke-width="6"/>
+  </g>
+  <path d="M0 316 C80 262 152 266 226 318 C320 383 438 354 720 286 L720 430 L0 430 Z" fill="url(#hill)"/>
+  <g transform="translate(46 238)">
+    <rect x="0" y="0" width="76" height="58" rx="7" fill="#c56a3e" stroke="#17233a" stroke-width="5"/>
+    <path d="M0 28 H76 M38 0 V58" stroke="#8f4528" stroke-width="5"/>
+    <rect x="86" y="-54" width="76" height="58" rx="7" fill="#ffcf51" stroke="#17233a" stroke-width="5"/>
+    <path d="M108 -26 H140" stroke="#8f4528" stroke-width="7" stroke-linecap="round"/>
+    <rect x="172" y="0" width="76" height="58" rx="7" fill="#c56a3e" stroke="#17233a" stroke-width="5"/>
+    <path d="M172 28 H248 M210 0 V58" stroke="#8f4528" stroke-width="5"/>
+  </g>
+  <g transform="translate(534 174)">
+    <path d="M60 0 V160" stroke="#17233a" stroke-width="8" stroke-linecap="round"/>
+    <path d="M64 8 L144 38 L64 68 Z" fill="#ef5f50" stroke="#17233a" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="20" y="154" width="92" height="30" rx="8" fill="#c56a3e" stroke="#17233a" stroke-width="5"/>
+  </g>
+  <g transform="translate(266 104)">
+    <ellipse cx="92" cy="188" rx="70" ry="24" fill="rgba(23,35,58,.2)"/>
+    <circle cx="92" cy="68" r="54" fill="#ffcf9f" stroke="#17233a" stroke-width="6"/>
+    <path d="M44 54 C56 14 130 14 142 54 C112 39 76 39 44 54 Z" fill="#3157a7"/>
+    <circle cx="72" cy="70" r="7" fill="#17233a"/>
+    <circle cx="112" cy="70" r="7" fill="#17233a"/>
+    <path d="M76 94 C86 102 99 102 110 94" fill="none" stroke="#17233a" stroke-width="5" stroke-linecap="round"/>
+    <rect x="42" y="120" width="100" height="88" rx="12" fill="#2f77c8" stroke="#17233a" stroke-width="6"/>
+    <rect x="60" y="136" width="64" height="32" rx="7" fill="#fff" stroke="#17233a" stroke-width="5"/>
+    <path d="M68 153 H116" stroke="#ef5f50" stroke-width="7" stroke-linecap="round"/>
+    <path d="M44 134 C3 142 -4 197 34 210" fill="none" stroke="#17233a" stroke-width="10" stroke-linecap="round"/>
+    <path d="M140 134 C182 145 187 198 148 210" fill="none" stroke="#17233a" stroke-width="10" stroke-linecap="round"/>
+    <path d="M63 206 L46 268" stroke="#17233a" stroke-width="11" stroke-linecap="round"/>
+    <path d="M122 206 L140 268" stroke="#17233a" stroke-width="11" stroke-linecap="round"/>
+    <path d="M30 270 H70" stroke="#17233a" stroke-width="12" stroke-linecap="round"/>
+    <path d="M122 270 H164" stroke="#17233a" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(164 118)">
+    <rect x="0" y="0" width="62" height="62" rx="8" fill="#fff" stroke="#17233a" stroke-width="5"/>
+    <path d="M16 40 L31 16 L48 40 Z" fill="#ef5f50"/>
+    <rect x="82" y="-34" width="62" height="62" rx="8" fill="#fff" stroke="#17233a" stroke-width="5"/>
+    <path d="M102 -15 H124 V11 H102 Z" fill="#2f77c8"/>
+  </g>
+  <g transform="translate(454 244)">
+    <ellipse cx="56" cy="58" rx="50" ry="44" fill="#41b883" stroke="#17233a" stroke-width="5"/>
+    <path d="M22 22 L6 -10 L40 9 Z" fill="#41b883" stroke="#17233a" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M90 22 L108 -10 L72 9 Z" fill="#41b883" stroke="#17233a" stroke-width="5" stroke-linejoin="round"/>
+    <circle cx="37" cy="50" r="7" fill="#17233a"/>
+    <circle cx="74" cy="50" r="7" fill="#17233a"/>
+    <path d="M42 73 C53 82 66 82 77 73" fill="none" stroke="#17233a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="56" cy="8" r="14" fill="#ffd34d" stroke="#17233a" stroke-width="5"/>
+  </g>
+  <rect x="0" y="380" width="720" height="50" fill="#c56a3e"/>
+  <path d="M0 380 H720 M0 405 H720" stroke="#8f4528" stroke-width="5"/>
+  <path d="M44 380 V430 M112 380 V430 M180 380 V430 M248 380 V430 M316 380 V430 M384 380 V430 M452 380 V430 M520 380 V430 M588 380 V430 M656 380 V430" stroke="#8f4528" stroke-width="5"/>
+</svg>
