@@ -10,3 +10,6 @@
 /data/*
   Cache-Control: public, max-age=300
 
+/app.js
+  Cache-Control: no-cache
+
