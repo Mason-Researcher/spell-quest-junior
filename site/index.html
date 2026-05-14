@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Spell Quest Junior</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260514-bpmf-v3-preview">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -18,18 +18,18 @@
       <p class="eyebrow">Spell Quest Junior</p>
       <h1>Spelling Bee Adventure</h1>
       <p class="hero-note">
-        <ruby>國小二年級<rt>ㄍㄨㄛˊ ㄒㄧㄠˇ ㄦˋ ㄋㄧㄢˊ ㄐㄧˊ</rt></ruby>
+        <span data-bpmf-text="國小二年級" data-bpmf="ㄍㄨㄛˊ ㄒㄧㄠˇ ㄦˋ ㄋㄧㄢˊ ㄐㄧˊ"></span>
         <span>/ Grade 2</span>
         <span>spelling practice lab</span>
       </p>
       <div class="hero-actions" role="navigation" aria-label="Primary modes">
         <button class="mode-tab active" type="button" data-mode="practice">
           <span class="button-icon" aria-hidden="true"></span>
-          <ruby>練習模式<rt>ㄌㄧㄢˋ ㄒㄧˊ ㄇㄛˊ ㄕˋ</rt></ruby>
+          <span data-bpmf-text="練習模式" data-bpmf="ㄌㄧㄢˋ ㄒㄧˊ ㄇㄛˊ ㄕˋ"></span>
         </button>
         <button class="mode-tab" type="button" data-mode="exam">
           <span class="button-icon trophy" aria-hidden="true"></span>
-          <ruby>考試模式<rt>ㄎㄠˇ ㄕˋ ㄇㄛˊ ㄕˋ</rt></ruby>
+          <span data-bpmf-text="考試模式" data-bpmf="ㄎㄠˇ ㄕˋ ㄇㄛˊ ㄕˋ"></span>
         </button>
       </div>
     </div>
@@ -44,20 +44,35 @@
       <section class="stat-grid" aria-label="Progress">
         <div>
           <strong id="totalWords">0</strong>
-          <span><ruby>單字<rt>ㄉㄢ ㄗˋ</rt></ruby></span>
+          <span class="static-zhuyin" aria-label="單字">
+            <span class="taiwan-zhuyin" aria-hidden="true">
+              <span class="bpmf-unit"><span class="bpmf-han">單</span><span class="bpmf-mark"><span class="bpmf-sound"><span class="bpmf-symbol">ㄉ</span><span class="bpmf-symbol">ㄢ</span></span><span class="bpmf-tone bpmf-tone-empty">ˊ</span></span></span>
+              <span class="bpmf-unit"><span class="bpmf-han">字</span><span class="bpmf-mark bpmf-mark-short"><span class="bpmf-sound"><span class="bpmf-symbol">ㄗ</span></span><span class="bpmf-tone">ˋ</span></span></span>
+            </span>
+          </span>
         </div>
         <div>
           <strong id="knownWords">0</strong>
-          <span><ruby>已熟<rt>ㄧˇ ㄕㄨˊ</rt></ruby></span>
+          <span class="static-zhuyin" aria-label="已熟">
+            <span class="taiwan-zhuyin" aria-hidden="true">
+              <span class="bpmf-unit"><span class="bpmf-han">已</span><span class="bpmf-mark bpmf-mark-short"><span class="bpmf-sound"><span class="bpmf-symbol">ㄧ</span></span><span class="bpmf-tone">ˇ</span></span></span>
+              <span class="bpmf-unit"><span class="bpmf-han">熟</span><span class="bpmf-mark"><span class="bpmf-sound"><span class="bpmf-symbol">ㄕ</span><span class="bpmf-symbol">ㄨ</span></span><span class="bpmf-tone">ˊ</span></span></span>
+            </span>
+          </span>
         </div>
         <div>
           <strong id="starWords">0</strong>
-          <span><ruby>重點<rt>ㄓㄨㄥˋ ㄉㄧㄢˇ</rt></ruby></span>
+          <span class="static-zhuyin" aria-label="重點">
+            <span class="taiwan-zhuyin" aria-hidden="true">
+              <span class="bpmf-unit"><span class="bpmf-han">重</span><span class="bpmf-mark bpmf-mark-long"><span class="bpmf-sound"><span class="bpmf-symbol">ㄓ</span><span class="bpmf-symbol">ㄨ</span><span class="bpmf-symbol">ㄥ</span></span><span class="bpmf-tone">ˋ</span></span></span>
+              <span class="bpmf-unit"><span class="bpmf-han">點</span><span class="bpmf-mark bpmf-mark-long"><span class="bpmf-sound"><span class="bpmf-symbol">ㄉ</span><span class="bpmf-symbol">ㄧ</span><span class="bpmf-symbol">ㄢ</span></span><span class="bpmf-tone">ˇ</span></span></span>
+            </span>
+          </span>
         </div>
       </section>
       <section class="audio-panel">
-        <h2><ruby>錄音參考<rt>ㄌㄨˋ ㄧㄣ ㄘㄢ ㄎㄠˇ</rt></ruby></h2>
-        <label for="audioSelect"><ruby>考題音檔<rt>ㄎㄠˇ ㄊㄧˊ ㄧㄣ ㄉㄤˇ</rt></ruby></label>
+        <h2><span data-bpmf-text="錄音參考" data-bpmf="ㄌㄨˋ ㄧㄣ ㄘㄢ ㄎㄠˇ"></span></h2>
+        <label for="audioSelect"><span data-bpmf-text="考題音檔" data-bpmf="ㄎㄠˇ ㄊㄧˊ ㄧㄣ ㄉㄤˇ"></span></label>
         <select id="audioSelect">
           <option value="assets/audio/intermediate-mock-test-2.m4a">Intermediate Mock Test 2</option>
           <option value="assets/audio/advanced-mock-test-2.m4a">Advanced Mock Test 2</option>
@@ -69,27 +84,33 @@
     <section class="workspace">
       <section class="toolbar" aria-label="Filters">
         <label>
-          <span><ruby>搜尋<rt>ㄙㄡ ㄒㄩㄣˊ</rt></ruby></span>
+          <span data-bpmf-text="搜尋" data-bpmf="ㄙㄡ ㄒㄩㄣˊ"></span>
           <input id="searchInput" type="search" placeholder="word, topic, source">
         </label>
         <label>
-          <span><ruby>程度<rt>ㄔㄥˊ ㄉㄨˋ</rt></ruby></span>
+          <span data-bpmf-text="字頭" data-bpmf="ㄗˋ ㄊㄡˊ"></span>
+          <select id="initialFilter">
+            <option value="all">All</option>
+          </select>
+        </label>
+        <label>
+          <span data-bpmf-text="程度" data-bpmf="ㄔㄥˊ ㄉㄨˋ"></span>
           <select id="levelFilter">
-            <option value="all">全部（ㄑㄩㄢˊ ㄅㄨˋ）</option>
+            <option value="all">All</option>
             <option value="starter">starter</option>
             <option value="bridge">bridge</option>
             <option value="challenge">challenge</option>
           </select>
         </label>
         <label>
-          <span><ruby>主題<rt>ㄓㄨˇ ㄊㄧˊ</rt></ruby></span>
+          <span data-bpmf-text="主題" data-bpmf="ㄓㄨˇ ㄊㄧˊ"></span>
           <select id="topicFilter">
-            <option value="all">全部（ㄑㄩㄢˊ ㄅㄨˋ）</option>
+            <option value="all">All</option>
           </select>
         </label>
         <button id="shuffleButton" class="icon-button" type="button" title="Shuffle">
           <span class="button-icon shuffle" aria-hidden="true"></span>
-          <ruby>洗牌<rt>ㄒㄧˇ ㄆㄞˊ</rt></ruby>
+          <span data-bpmf-text="洗牌" data-bpmf="ㄒㄧˇ ㄆㄞˊ"></span>
         </button>
       </section>
 
@@ -98,11 +119,11 @@
           <div class="card-topline">
             <span id="wordSource" class="pill">source</span>
             <span id="wordLevel" class="pill level">level</span>
-            <span id="wordStar" class="pill star hidden"><ruby>重點<rt>ㄓㄨㄥˋ ㄉㄧㄢˇ</rt></ruby></span>
+            <span id="wordStar" class="pill star hidden"><span data-bpmf-text="重點" data-bpmf="ㄓㄨㄥˋ ㄉㄧㄢˇ"></span></span>
           </div>
           <div class="word-main">
             <div>
-              <p class="card-label"><ruby>今日單字<rt>ㄐㄧㄣ ㄖˋ ㄉㄢ ㄗˋ</rt></ruby></p>
+              <p class="card-label"><span data-bpmf-text="今日單字" data-bpmf="ㄐㄧㄣ ㄖˋ ㄉㄢ ㄗˋ"></span></p>
               <h2 id="wordText">word</h2>
               <p id="wordPos" class="pos">pos</p>
             </div>
@@ -113,20 +134,20 @@
           <div class="meaning-grid">
             <section>
               <div class="section-heading">
-                <h3><ruby>意思<rt>ㄧˋ ㄙ˙</rt></ruby></h3>
+                <h3><span data-bpmf-text="意思" data-bpmf="ㄧˋ ㄙ˙"></span></h3>
                 <button id="speakMeaningZh" class="mini-speak" type="button">
                   <span class="speaker-icon mini" aria-hidden="true"></span>
-                  <ruby>中文<rt>ㄓㄨㄥ ㄨㄣˊ</rt></ruby>
+                  <span data-bpmf-text="中文" data-bpmf="ㄓㄨㄥ ㄨㄣˊ"></span>
                 </button>
               </div>
               <p id="meaningText">meaning</p>
             </section>
             <section>
               <div class="section-heading">
-                <h3><ruby>情境<rt>ㄑㄧㄥˊ ㄐㄧㄥˋ</rt></ruby></h3>
+                <h3><span data-bpmf-text="情境" data-bpmf="ㄑㄧㄥˊ ㄐㄧㄥˋ"></span></h3>
                 <button id="speakTopicZh" class="mini-speak" type="button">
                   <span class="speaker-icon mini" aria-hidden="true"></span>
-                  <ruby>中文<rt>ㄓㄨㄥ ㄨㄣˊ</rt></ruby>
+                  <span data-bpmf-text="中文" data-bpmf="ㄓㄨㄥ ㄨㄣˊ"></span>
                 </button>
               </div>
               <p id="topicText">topic</p>
@@ -134,7 +155,7 @@
           </div>
           <section class="example-box">
             <div class="section-heading">
-              <h3><ruby>英文例句<rt>ㄧㄥ ㄨㄣˊ ㄌㄧˋ ㄐㄩˋ</rt></ruby></h3>
+              <h3><span data-bpmf-text="英文例句" data-bpmf="ㄧㄥ ㄨㄣˊ ㄌㄧˋ ㄐㄩˋ"></span></h3>
               <div class="speak-pair">
                 <button id="speakExampleEn" class="mini-speak" type="button">
                   <span class="speaker-icon mini" aria-hidden="true"></span>
@@ -142,7 +163,7 @@
                 </button>
                 <button id="speakExampleZh" class="mini-speak zh" type="button">
                   <span class="speaker-icon mini" aria-hidden="true"></span>
-                  <ruby>中文<rt>ㄓㄨㄥ ㄨㄣˊ</rt></ruby>
+                  <span data-bpmf-text="中文" data-bpmf="ㄓㄨㄥ ㄨㄣˊ"></span>
                 </button>
               </div>
             </div>
@@ -153,7 +174,7 @@
           </section>
           <section class="example-box muted">
             <div class="section-heading">
-              <h3><ruby>應用任務<rt>ㄧㄥˋ ㄩㄥˋ ㄖㄣˋ ㄨˋ</rt></ruby></h3>
+              <h3><span data-bpmf-text="應用任務" data-bpmf="ㄧㄥˋ ㄩㄥˋ ㄖㄣˋ ㄨˋ"></span></h3>
               <div class="speak-pair">
                 <button id="speakUsageEn" class="mini-speak" type="button">
                   <span class="speaker-icon mini" aria-hidden="true"></span>
@@ -161,7 +182,7 @@
                 </button>
                 <button id="speakUsageZh" class="mini-speak zh" type="button">
                   <span class="speaker-icon mini" aria-hidden="true"></span>
-                  <ruby>中文<rt>ㄓㄨㄥ ㄨㄣˊ</rt></ruby>
+                  <span data-bpmf-text="中文" data-bpmf="ㄓㄨㄥ ㄨㄣˊ"></span>
                 </button>
               </div>
             </div>
@@ -174,9 +195,9 @@
           </section>
           <div class="letter-strip" id="practiceLetters" aria-label="Word letters"></div>
           <div class="card-actions">
-            <button id="prevButton" type="button"><ruby>上一張<rt>ㄕㄤˋ ㄧˋ ㄓㄤ</rt></ruby></button>
-            <button id="knownButton" type="button"><ruby>標記已熟<rt>ㄅㄧㄠ ㄐㄧˋ ㄧˇ ㄕㄨˊ</rt></ruby></button>
-            <button id="nextButton" type="button"><ruby>下一張<rt>ㄒㄧㄚˋ ㄧˋ ㄓㄤ</rt></ruby></button>
+            <button id="prevButton" type="button"><span data-bpmf-text="上一張" data-bpmf="ㄕㄤˋ ㄧˋ ㄓㄤ"></span></button>
+            <button id="knownButton" type="button"><span data-bpmf-text="標記已熟" data-bpmf="ㄅㄧㄠ ㄐㄧˋ ㄧˇ ㄕㄨˊ"></span></button>
+            <button id="nextButton" type="button"><span data-bpmf-text="下一張" data-bpmf="ㄒㄧㄚˋ ㄧˋ ㄓㄤ"></span></button>
           </div>
         </article>
       </section>
@@ -185,38 +206,38 @@
         <article class="exam-card">
           <div class="exam-header">
             <div>
-              <p class="card-label"><ruby>測驗卡<rt>ㄘㄜˋ ㄧㄢˋ ㄎㄚˇ</rt></ruby></p>
-              <h2><ruby>聽音拼字<rt>ㄊㄧㄥ ㄧㄣ ㄆㄧㄣ ㄗˋ</rt></ruby></h2>
+              <p class="card-label"><span data-bpmf-text="測驗卡" data-bpmf="ㄘㄜˋ ㄧㄢˋ ㄎㄚˇ"></span></p>
+              <h2><span data-bpmf-text="聽音拼字" data-bpmf="ㄊㄧㄥ ㄧㄣ ㄆㄧㄣ ㄗˋ"></span></h2>
             </div>
             <div class="score-pill"><span id="examScore">0</span> / <span id="examTotal">0</span></div>
           </div>
           <p class="exam-note">
-            <ruby>先聽發音，再用字母卡拼出答案。<rt>ㄒㄧㄢ ㄊㄧㄥ ㄈㄚ ㄧㄣ，ㄗㄞˋ ㄩㄥˋ ㄗˋ ㄇㄨˇ ㄎㄚˇ ㄆㄧㄣ ㄔㄨ ㄉㄚˊ ㄢˋ。</rt></ruby>
+            <span data-bpmf-text="先聽發音，再用字母卡拼出答案。" data-bpmf="ㄒㄧㄢ ㄊㄧㄥ ㄈㄚ ㄧㄣ，ㄗㄞˋ ㄩㄥˋ ㄗˋ ㄇㄨˇ ㄎㄚˇ ㄆㄧㄣ ㄔㄨ ㄉㄚˊ ㄢˋ。"></span>
           </p>
           <div class="exam-controls">
             <button id="playExamWord" class="icon-button" type="button">
               <span class="speaker-icon small" aria-hidden="true"></span>
-              <ruby>播放單字<rt>ㄅㄛ ㄈㄤˋ ㄉㄢ ㄗˋ</rt></ruby>
+              <span data-bpmf-text="播放單字" data-bpmf="ㄅㄛ ㄈㄤˋ ㄉㄢ ㄗˋ"></span>
             </button>
             <button id="playExamHintZh" class="icon-button" type="button">
               <span class="speaker-icon small" aria-hidden="true"></span>
-              <ruby>播放提示<rt>ㄅㄛ ㄈㄤˋ ㄊㄧˊ ㄕˋ</rt></ruby>
+              <span data-bpmf-text="播放提示" data-bpmf="ㄅㄛ ㄈㄤˋ ㄊㄧˊ ㄕˋ"></span>
             </button>
             <button id="newExamButton" class="icon-button" type="button">
               <span class="button-icon shuffle" aria-hidden="true"></span>
-              <ruby>重新出題<rt>ㄔㄨㄥˊ ㄒㄧㄣ ㄔㄨ ㄊㄧˊ</rt></ruby>
+              <span data-bpmf-text="重新出題" data-bpmf="ㄔㄨㄥˊ ㄒㄧㄣ ㄔㄨ ㄊㄧˊ"></span>
             </button>
           </div>
           <div id="answerSlots" class="answer-slots" aria-label="Answer slots"></div>
           <div id="letterBank" class="letter-bank" aria-label="Letter bank"></div>
           <div id="examFeedback" class="feedback" role="status"></div>
           <div class="card-actions">
-            <button id="eraseButton" type="button"><ruby>退一格<rt>ㄊㄨㄟˋ ㄧˋ ㄍㄜˊ</rt></ruby></button>
-            <button id="checkButton" type="button"><ruby>檢查答案<rt>ㄐㄧㄢˇ ㄔㄚˊ ㄉㄚˊ ㄢˋ</rt></ruby></button>
-            <button id="nextExamButton" type="button"><ruby>下一題<rt>ㄒㄧㄚˋ ㄧˋ ㄊㄧˊ</rt></ruby></button>
+            <button id="eraseButton" type="button"><span data-bpmf-text="退一格" data-bpmf="ㄊㄨㄟˋ ㄧˋ ㄍㄜˊ"></span></button>
+            <button id="checkButton" type="button"><span data-bpmf-text="檢查答案" data-bpmf="ㄐㄧㄢˇ ㄔㄚˊ ㄉㄚˊ ㄢˋ"></span></button>
+            <button id="nextExamButton" type="button"><span data-bpmf-text="下一題" data-bpmf="ㄒㄧㄚˋ ㄧˋ ㄊㄧˊ"></span></button>
           </div>
           <section class="exam-hint">
-            <h3><ruby>提示<rt>ㄊㄧˊ ㄕˋ</rt></ruby></h3>
+            <h3><span data-bpmf-text="提示" data-bpmf="ㄊㄧˊ ㄕˋ"></span></h3>
             <p id="examHint">hint</p>
           </section>
         </article>
@@ -228,6 +249,6 @@
     <button class="letter-tile" type="button"></button>
   </template>
 
-  <script src="app.js?v=20260514-taiwan-zhuyin"></script>
+  <script src="app.js?v=20260514-bpmf-v3-preview"></script>
 </body>
 </html>

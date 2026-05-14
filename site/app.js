@@ -15,6 +15,9 @@ const REQUIRED_WORD_FIELDS = [
 ];
 
 const ALLOWED_LEVELS = ["starter", "bridge", "challenge"];
+const FIRST_LETTERS = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+const ZHUYIN_TONE_MARKS = ["ˊ", "ˇ", "ˋ", "˙"];
+const BOPOMOFO_SYMBOLS = Array.from("ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ");
 
 const SPEECH_SETTINGS = {
   volume: 1,
@@ -71,6 +74,7 @@ const elements = {
   practiceView: document.getElementById("practiceView"),
   examView: document.getElementById("examView"),
   searchInput: document.getElementById("searchInput"),
+  initialFilter: document.getElementById("initialFilter"),
   levelFilter: document.getElementById("levelFilter"),
   topicFilter: document.getElementById("topicFilter"),
   shuffleButton: document.getElementById("shuffleButton"),
@@ -152,12 +156,79 @@ const LABEL_PAIRS = {
     { text: "文", bpmf: "ㄨㄣˊ" },
     { text: "任", bpmf: "ㄖㄣˋ" },
     { text: "務", bpmf: "ㄨˋ" }
+  ],
+  noMatchingWords: [
+    { text: "沒", bpmf: "ㄇㄟˊ" },
+    { text: "有", bpmf: "ㄧㄡˇ" },
+    { text: "符", bpmf: "ㄈㄨˊ" },
+    { text: "合", bpmf: "ㄏㄜˊ" },
+    { text: "條", bpmf: "ㄊㄧㄠˊ" },
+    { text: "件", bpmf: "ㄐㄧㄢˋ" },
+    { text: "的", bpmf: "ㄉㄜ˙" },
+    { text: "單", bpmf: "ㄉㄢ" },
+    { text: "字", bpmf: "ㄗˋ" }
+  ],
+  noExamItems: [
+    { text: "沒", bpmf: "ㄇㄟˊ" },
+    { text: "有", bpmf: "ㄧㄡˇ" },
+    { text: "可", bpmf: "ㄎㄜˇ" },
+    { text: "用", bpmf: "ㄩㄥˋ" },
+    { text: "題", bpmf: "ㄊㄧˊ" },
+    { text: "目", bpmf: "ㄇㄨˋ" }
+  ],
+  cancelKnown: [
+    { text: "取", bpmf: "ㄑㄩˇ" },
+    { text: "消", bpmf: "ㄒㄧㄠ" },
+    { text: "已", bpmf: "ㄧˇ" },
+    { text: "熟", bpmf: "ㄕㄨˊ" }
+  ],
+  markKnown: [
+    { text: "標", bpmf: "ㄅㄧㄠ" },
+    { text: "記", bpmf: "ㄐㄧˋ" },
+    { text: "已", bpmf: "ㄧˇ" },
+    { text: "熟", bpmf: "ㄕㄨˊ" }
+  ],
+  meaning: [
+    { text: "意", bpmf: "ㄧˋ" },
+    { text: "思", bpmf: "ㄙ˙" }
+  ],
+  source: [
+    { text: "來", bpmf: "ㄌㄞˊ" },
+    { text: "源", bpmf: "ㄩㄢˊ" }
+  ],
+  use: [
+    { text: "用", bpmf: "ㄩㄥˋ" }
+  ],
+  express: [
+    { text: "表", bpmf: "ㄅㄧㄠˇ" },
+    { text: "達", bpmf: "ㄉㄚˊ" }
+  ],
+  thisConcept: [
+    { text: "這", bpmf: "ㄓㄜˋ" },
+    { text: "個", bpmf: "ㄍㄜˋ" },
+    { text: "概", bpmf: "ㄍㄞˋ" },
+    { text: "念", bpmf: "ㄋㄧㄢˋ" }
+  ],
+  needMoreLetters: [
+    { text: "還", bpmf: "ㄏㄞˊ" },
+    { text: "差", bpmf: "ㄔㄚ" },
+    { text: "幾", bpmf: "ㄐㄧˇ" },
+    { text: "個", bpmf: "ㄍㄜˋ" },
+    { text: "字", bpmf: "ㄗˋ" },
+    { text: "母", bpmf: "ㄇㄨˇ" }
+  ],
+  correct: [
+    { text: "答", bpmf: "ㄉㄚˊ" },
+    { text: "對", bpmf: "ㄉㄨㄟˋ" },
+    { text: "了", bpmf: "ㄌㄜ˙" }
+  ],
+  tryAgain: [
+    { text: "再", bpmf: "ㄗㄞˋ" },
+    { text: "想", bpmf: "ㄒㄧㄤˇ" },
+    { text: "一", bpmf: "ㄧˊ" },
+    { text: "下", bpmf: "ㄒㄧㄚˋ" }
   ]
 };
-
-function ruby(text, zhuyin) {
-  return `<ruby>${text}<rt>${zhuyin}</rt></ruby>`;
-}
 
 function isZhuyinPairs(pairs) {
   return Array.isArray(pairs) &&
@@ -165,9 +236,115 @@ function isZhuyinPairs(pairs) {
     pairs.every((pair) => pair && String(pair.text || "").length > 0 && "bpmf" in pair);
 }
 
+function splitZhuyinSyllable(value) {
+  let body = String(value || "").trim();
+  let tone = "";
+  for (const toneMark of ZHUYIN_TONE_MARKS) {
+    const position = body.indexOf(toneMark);
+    if (position >= 0) {
+      tone = toneMark;
+      body = body.slice(0, position) + body.slice(position + toneMark.length);
+      break;
+    }
+  }
+  const symbols = Array.from(body).filter((symbol) => symbol !== " " && symbol !== "　");
+  return { symbols, tone };
+}
+
+function isCjkCharacter(value) {
+  if (!value) {
+    return false;
+  }
+  const code = value.codePointAt(0);
+  return (code >= 0x3400 && code <= 0x4DBF) ||
+    (code >= 0x4E00 && code <= 0x9FFF) ||
+    (code >= 0xF900 && code <= 0xFAFF);
+}
+
+function isBopomofoCharacter(value) {
+  return BOPOMOFO_SYMBOLS.includes(value) || ZHUYIN_TONE_MARKS.includes(value);
+}
+
+function cleanBpmfToken(value) {
+  let output = "";
+  Array.from(String(value || "")).forEach((character) => {
+    if (isBopomofoCharacter(character)) {
+      output += character;
+    }
+  });
+  return output;
+}
+
+function splitBpmfTokens(value) {
+  const tokens = [];
+  let current = "";
+  Array.from(String(value || "")).forEach((character) => {
+    if (character === " " || character === "　" || character === "\n" || character === "\t") {
+      const cleaned = cleanBpmfToken(current);
+      if (cleaned) {
+        tokens.push(cleaned);
+      }
+      current = "";
+      return;
+    }
+    current += character;
+  });
+  const cleaned = cleanBpmfToken(current);
+  if (cleaned) {
+    tokens.push(cleaned);
+  }
+  return tokens;
+}
+
+function pairsFromTextAndZhuyin(text, zhuyin) {
+  const tokens = splitBpmfTokens(zhuyin);
+  let tokenIndex = 0;
+  return Array.from(String(text || "")).map((character) => {
+    if (!isCjkCharacter(character)) {
+      return { text: character, bpmf: "" };
+    }
+    const bpmf = tokens[tokenIndex] || "";
+    tokenIndex += 1;
+    return { text: character, bpmf };
+  });
+}
+
+function createZhuyinMark(bpmf) {
+  const mark = document.createElement("span");
+  const parsed = splitZhuyinSyllable(bpmf);
+  mark.className = "bpmf-mark";
+  mark.dataset.bpmf = bpmf;
+  mark.setAttribute("aria-label", bpmf);
+  if (parsed.symbols.length <= 1) {
+    mark.classList.add("bpmf-mark-short");
+  } else if (parsed.symbols.length >= 3) {
+    mark.classList.add("bpmf-mark-long");
+  }
+  if (parsed.tone === "˙") {
+    mark.classList.add("bpmf-mark-neutral");
+  }
+  const sound = document.createElement("span");
+  sound.className = "bpmf-sound";
+  parsed.symbols.forEach((symbol) => {
+    const symbolNode = document.createElement("span");
+    symbolNode.className = "bpmf-symbol";
+    symbolNode.textContent = symbol;
+    sound.appendChild(symbolNode);
+  });
+  const tone = document.createElement("span");
+  tone.className = parsed.tone ? "bpmf-tone" : "bpmf-tone bpmf-tone-empty";
+  tone.textContent = parsed.tone || "ˊ";
+  mark.appendChild(sound);
+  mark.appendChild(tone);
+  return mark;
+}
+
 function createZhuyinPhrase(pairs, extraClass = "") {
   const phrase = document.createElement("span");
   phrase.className = `taiwan-zhuyin${extraClass ? ` ${extraClass}` : ""}`;
+  const phraseText = pairs.map((pair) => String(pair.text || "")).join("");
+  phrase.dataset.bpmfText = phraseText;
+  phrase.setAttribute("aria-label", phraseText);
   pairs.forEach((pair) => {
     const unit = document.createElement("span");
     const text = String(pair.text || "");
@@ -178,14 +355,47 @@ function createZhuyinPhrase(pairs, extraClass = "") {
     han.textContent = text;
     unit.appendChild(han);
     if (bpmf) {
-      const mark = document.createElement("span");
-      mark.className = "bpmf-mark";
-      mark.textContent = bpmf;
-      unit.appendChild(mark);
+      unit.appendChild(createZhuyinMark(bpmf));
     }
     phrase.appendChild(unit);
   });
   return phrase;
+}
+
+function renderBpmfText(element, text, zhuyin, extraClass = "") {
+  if (!element) {
+    return;
+  }
+  element.innerHTML = "";
+  element.appendChild(createZhuyinPhrase(pairsFromTextAndZhuyin(text, zhuyin), extraClass));
+}
+
+function renderBpmfPairs(element, pairs, extraClass = "") {
+  if (!element) {
+    return;
+  }
+  element.innerHTML = "";
+  element.appendChild(createZhuyinPhrase(pairs, extraClass));
+}
+
+function appendBpmfPairs(parent, pairs, extraClass = "") {
+  parent.appendChild(createZhuyinPhrase(pairs, extraClass));
+}
+
+function appendPlain(parent, text) {
+  parent.appendChild(document.createTextNode(text));
+}
+
+function hydrateStaticBpmf() {
+  const nodes = Array.from(document.querySelectorAll("[data-bpmf-text][data-bpmf]"));
+  nodes.forEach((node) => {
+    const text = node.dataset.bpmfText || "";
+    const bpmf = node.dataset.bpmf || "";
+    node.innerHTML = "";
+    node.classList.add("bpmf-static");
+    node.setAttribute("aria-label", text);
+    node.appendChild(createZhuyinPhrase(pairsFromTextAndZhuyin(text, bpmf), "bpmf-static-text"));
+  });
 }
 
 function renderZhuyinPhrase(element, pairs, fallbackText, fallbackZhuyin, extraClass = "") {
@@ -213,6 +423,20 @@ function renderLabelAndPhrase(element, labelPairs, contentPairs, fallbackLabel, 
     return;
   }
   element.textContent = `${fallbackLabel}：${fallbackText}（${fallbackZhuyin}）`;
+}
+
+function renderExamHint(word) {
+  elements.examHint.innerHTML = "";
+  appendBpmfPairs(elements.examHint, LABEL_PAIRS.meaning, "bpmf-label");
+  appendPlain(elements.examHint, "：");
+  appendBpmfPairs(elements.examHint, word.zhPairs, "bpmf-content");
+  appendPlain(elements.examHint, " · ");
+  appendBpmfPairs(elements.examHint, LABEL_PAIRS.topic, "bpmf-label");
+  appendPlain(elements.examHint, "：");
+  appendBpmfPairs(elements.examHint, word.topicZhPairs, "bpmf-content");
+  appendPlain(elements.examHint, " · ");
+  appendBpmfPairs(elements.examHint, LABEL_PAIRS.source, "bpmf-label");
+  appendPlain(elements.examHint, `：${word.source}`);
 }
 
 function pairText(pairs) {
@@ -454,25 +678,55 @@ function buildTopicFilter() {
   topics.forEach((item) => {
     const option = document.createElement("option");
     option.value = item.topic;
-    option.textContent = item.label;
+    option.textContent = item.topic;
     elements.topicFilter.appendChild(option);
   });
+}
+
+function wordInitial(word) {
+  return String(word.word || "").trim().charAt(0).toUpperCase();
+}
+
+function buildInitialFilter() {
+  if (!elements.initialFilter) {
+    return;
+  }
+  FIRST_LETTERS.forEach((letter) => {
+    const count = state.words.filter((word) => wordInitial(word) === letter).length;
+    if (count === 0) {
+      return;
+    }
+    const option = document.createElement("option");
+    option.value = letter;
+    option.textContent = `${letter} (${count})`;
+    elements.initialFilter.appendChild(option);
+  });
+}
+
+function hasActiveWordFilter() {
+  const needle = normalizeText(elements.searchInput.value);
+  const level = elements.levelFilter.value;
+  const topic = elements.topicFilter.value;
+  const initial = elements.initialFilter ? elements.initialFilter.value : "all";
+  return needle.length > 0 || level !== "all" || topic !== "all" || initial !== "all";
 }
 
 function filterWords() {
   const needle = normalizeText(elements.searchInput.value);
   const level = elements.levelFilter.value;
   const topic = elements.topicFilter.value;
+  const initial = elements.initialFilter ? elements.initialFilter.value : "all";
   state.filteredWords = state.words.filter((word) => {
     const levelOk = level === "all" || word.level === level;
     const topicOk = topic === "all" || word.topic === topic;
+    const initialOk = initial === "all" || wordInitial(word) === initial;
     const searchOk = needle.length === 0 ||
       includesText(word.word, needle) ||
       includesText(word.zh, needle) ||
       includesText(word.source, needle) ||
       includesText(word.topic, needle) ||
       includesText(word.topicZh, needle);
-    return levelOk && topicOk && searchOk;
+    return levelOk && topicOk && initialOk && searchOk;
   });
   if (state.filteredWords.length === 0) {
     state.currentIndex = 0;
@@ -499,7 +753,7 @@ function renderEmptyPractice() {
   elements.wordStar.classList.add("hidden");
   elements.wordText.textContent = "No words";
   elements.wordPos.textContent = "";
-  elements.meaningText.innerHTML = ruby("沒有符合條件的單字", "ㄇㄟˊ ㄧㄡˇ ㄈㄨˊ ㄏㄜˊ ㄊㄧㄠˊ ㄐㄧㄢˋ ㄉㄜ˙ ㄉㄢ ㄗˋ");
+  renderBpmfPairs(elements.meaningText, LABEL_PAIRS.noMatchingWords, "bpmf-meaning");
   elements.topicText.textContent = "";
   elements.exampleText.textContent = "";
   setText(elements.exampleZhText, "");
@@ -531,7 +785,14 @@ function renderExampleDetails(word) {
   setText(elements.exampleZhuyinText, "");
   setHidden(elements.exampleZhText, true);
   setHidden(elements.exampleZhuyinText, true);
-  elements.exampleZhHint.innerHTML = `${ruby("中文提示", "ㄓㄨㄥ ㄨㄣˊ ㄊㄧˊ ㄕˋ")}：${word.zh}（${word.zhuyin}） · ${ruby("主題", "ㄓㄨˇ ㄊㄧˊ")}：${word.topicZh}（${word.topicZhuyin}）`;
+  elements.exampleZhHint.innerHTML = "";
+  appendBpmfPairs(elements.exampleZhHint, LABEL_PAIRS.chineseHint, "bpmf-label");
+  appendPlain(elements.exampleZhHint, "：");
+  appendBpmfPairs(elements.exampleZhHint, word.zhPairs, "bpmf-content");
+  appendPlain(elements.exampleZhHint, " · ");
+  appendBpmfPairs(elements.exampleZhHint, LABEL_PAIRS.topic, "bpmf-label");
+  appendPlain(elements.exampleZhHint, "：");
+  appendBpmfPairs(elements.exampleZhHint, word.topicZhPairs, "bpmf-content");
 }
 
 function renderContextTabs(word) {
@@ -557,7 +818,7 @@ function renderContextTabs(word) {
     if (isZhuyinPairs(context.labelZhPairs)) {
       button.appendChild(createZhuyinPhrase(context.labelZhPairs, "bpmf-tab"));
     } else {
-      button.innerHTML = ruby(context.labelZh, context.labelZhuyin);
+      button.appendChild(createZhuyinPhrase(pairsFromTextAndZhuyin(context.labelZh, context.labelZhuyin), "bpmf-tab"));
     }
     button.addEventListener("click", () => {
       state.activeContextIndex = index;
@@ -586,7 +847,17 @@ function renderPracticeContext(word) {
   setText(elements.contextZhuyinText, "");
   setHidden(elements.contextZhText, true);
   setHidden(elements.contextZhuyinText, true);
-  elements.usageZhHint.innerHTML = `${ruby("中文任務", "ㄓㄨㄥ ㄨㄣˊ ㄖㄣˋ ㄨˋ")}：用 ${word.word} 表達「${word.zh}（${word.zhuyin}）」這個概念。`;
+  elements.usageZhHint.innerHTML = "";
+  appendBpmfPairs(elements.usageZhHint, LABEL_PAIRS.chineseTask, "bpmf-label");
+  appendPlain(elements.usageZhHint, "：");
+  appendBpmfPairs(elements.usageZhHint, LABEL_PAIRS.use, "bpmf-content");
+  appendPlain(elements.usageZhHint, ` ${word.word} `);
+  appendBpmfPairs(elements.usageZhHint, LABEL_PAIRS.express, "bpmf-content");
+  appendPlain(elements.usageZhHint, "「");
+  appendBpmfPairs(elements.usageZhHint, word.zhPairs, "bpmf-content");
+  appendPlain(elements.usageZhHint, "」");
+  appendBpmfPairs(elements.usageZhHint, LABEL_PAIRS.thisConcept, "bpmf-content");
+  appendPlain(elements.usageZhHint, "。");
   setText(elements.contextUsageZhuyin, "");
   setHidden(elements.contextUsageZhuyin, true);
 }
@@ -623,9 +894,7 @@ function renderPracticeLetters(wordText) {
 
 function updateKnownButton(word) {
   const isKnown = state.knownWords.has(word.id);
-  elements.knownButton.innerHTML = isKnown
-    ? ruby("取消已熟", "ㄑㄩˇ ㄒㄧㄠ ㄧˇ ㄕㄨˊ")
-    : ruby("標記已熟", "ㄅㄧㄠ ㄐㄧˋ ㄧˇ ㄕㄨˊ");
+  renderBpmfPairs(elements.knownButton, isKnown ? LABEL_PAIRS.cancelKnown : LABEL_PAIRS.markKnown);
 }
 
 function movePractice(step) {
@@ -949,7 +1218,7 @@ function setMode(mode) {
 }
 
 function databaseOnlyExamSource() {
-  const source = state.filteredWords.length > 0 ? state.filteredWords : state.words;
+  const source = state.filteredWords.length > 0 || hasActiveWordFilter() ? state.filteredWords : state.words;
   return source.filter((word) => state.wordById.has(word.id));
 }
 
@@ -965,7 +1234,7 @@ function startExam() {
 
 function renderExamQuestion() {
   if (state.examWords.length === 0) {
-    elements.examHint.innerHTML = ruby("沒有可用題目", "ㄇㄟˊ ㄧㄡˇ ㄎㄜˇ ㄩㄥˋ ㄊㄧˊ ㄇㄨˋ");
+    renderBpmfPairs(elements.examHint, LABEL_PAIRS.noExamItems);
     return;
   }
   state.activeExamWord = state.examWords[state.examIndex];
@@ -975,7 +1244,7 @@ function renderExamQuestion() {
   state.selectedLetters = [];
   elements.examFeedback.textContent = "";
   elements.examFeedback.className = "feedback";
-  elements.examHint.textContent = `意思：${state.activeExamWord.zh}（${state.activeExamWord.zhuyin}） · 主題：${state.activeExamWord.topicZh}（${state.activeExamWord.topicZhuyin}） · 來源：${state.activeExamWord.source}`;
+  renderExamHint(state.activeExamWord);
   renderAnswerSlots();
   renderLetterBank();
   if (!isAndroidChrome()) {
@@ -1043,7 +1312,7 @@ function checkAnswer() {
   }
   const answer = state.selectedLetters.join("");
   if (answer.length !== state.activeExamWord.word.length) {
-    elements.examFeedback.innerHTML = ruby("還差幾個字母", "ㄏㄞˊ ㄔㄚ ㄐㄧˇ ㄍㄜˋ ㄗˋ ㄇㄨˇ");
+    renderBpmfPairs(elements.examFeedback, LABEL_PAIRS.needMoreLetters);
     elements.examFeedback.className = "feedback warn";
     return false;
   }
@@ -1051,14 +1320,18 @@ function checkAnswer() {
   if (correct) {
     state.examScore += 1;
     elements.examScore.textContent = String(state.examScore);
-    elements.examFeedback.textContent = `答對了：${state.activeExamWord.word}`;
+    elements.examFeedback.innerHTML = "";
+    appendBpmfPairs(elements.examFeedback, LABEL_PAIRS.correct, "bpmf-label");
+    appendPlain(elements.examFeedback, `：${state.activeExamWord.word}`);
     elements.examFeedback.className = "feedback good";
     state.knownWords.add(state.activeExamWord.id);
     saveKnownWords();
     updateStats();
     return true;
   }
-  elements.examFeedback.textContent = `再想一下：${answer.toUpperCase()}`;
+  elements.examFeedback.innerHTML = "";
+  appendBpmfPairs(elements.examFeedback, LABEL_PAIRS.tryAgain, "bpmf-label");
+  appendPlain(elements.examFeedback, `：${answer.toUpperCase()}`);
   elements.examFeedback.className = "feedback warn";
   return false;
 }
@@ -1124,6 +1397,131 @@ function practiceContextSwitchSelfTestPassed() {
     pairText(contexts[1].usageZhPairs) === contexts[1].usageZh;
 }
 
+function maybeRunZhuyinLayoutTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("layouttest") !== "1") {
+    return;
+  }
+  window.setTimeout(() => {
+    const units = Array.from(document.querySelectorAll(".bpmf-unit"));
+    let checked = 0;
+    const issues = [];
+    units.forEach((unit, index) => {
+      if (unit.classList.contains("no-bpmf")) {
+        return;
+      }
+      const unitRect = unit.getBoundingClientRect();
+      if (unitRect.width === 0 && unitRect.height === 0) {
+        return;
+      }
+      const children = Array.from(unit.children);
+      const han = children.find((child) => child.classList.contains("bpmf-han"));
+      const mark = children.find((child) => child.classList.contains("bpmf-mark"));
+      if (!han || !mark) {
+        issues.push(`missing-part-${index}`);
+        return;
+      }
+      const hanRect = han.getBoundingClientRect();
+      const markRect = mark.getBoundingClientRect();
+      checked += 1;
+      const safeGap = markRect.left - hanRect.right;
+      if (safeGap < 2) {
+        issues.push(`unsafe-gap-${index}-${han.textContent}-${safeGap.toFixed(1)}`);
+      }
+      if (markRect.left < hanRect.left) {
+        issues.push(`wrong-side-${index}-${han.textContent}-${hanRect.left.toFixed(1)}-${markRect.left.toFixed(1)}`);
+      }
+      if (markRect.width > hanRect.width * 0.72) {
+        issues.push(`wide-mark-${index}-${han.textContent}-${markRect.width.toFixed(1)}-${hanRect.width.toFixed(1)}`);
+      }
+      if (markRect.height > hanRect.height * 1.2) {
+        issues.push(`tall-mark-${index}-${han.textContent}-${markRect.height.toFixed(1)}-${hanRect.height.toFixed(1)}`);
+      }
+    });
+    const marker = document.createElement("div");
+    marker.id = "zhuyinLayoutTestResult";
+    marker.dataset.checkedUnits = String(checked);
+    marker.dataset.issueCount = String(issues.length);
+    marker.textContent = checked > 0 && issues.length === 0 ? "PASS" : `FAIL ${issues.slice(0, 8).join(",")}`;
+    document.body.appendChild(marker);
+  }, 800);
+}
+
+function maybeRunInitialFilterTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("filtertest") !== "1" || !elements.initialFilter) {
+    return;
+  }
+  window.setTimeout(() => {
+    elements.initialFilter.value = "D";
+    filterWords();
+    const dPracticeCount = state.filteredWords.length;
+    const practiceOk = state.filteredWords.length > 0 &&
+      state.filteredWords.every((word) => wordInitial(word) === "D");
+    startExam();
+    const dExamCount = state.examWords.length;
+    const examOk = state.examWords.length > 0 &&
+      state.examWords.every((word) => wordInitial(word) === "D");
+    elements.initialFilter.value = "all";
+    filterWords();
+    const resetOk = state.filteredWords.length === state.words.length;
+    const marker = document.createElement("div");
+    marker.id = "initialFilterTestResult";
+    marker.dataset.dPracticeWords = String(dPracticeCount);
+    marker.dataset.dExamWords = String(dExamCount);
+    marker.dataset.resetWords = String(state.filteredWords.length);
+    marker.textContent = practiceOk && examOk && resetOk ? "PASS" : "FAIL";
+    document.body.appendChild(marker);
+  }, 900);
+}
+
+function textNodeIsCoveredByBpmf(node) {
+  let parent = node.parentElement;
+  while (parent) {
+    if (parent.classList && parent.classList.contains("bpmf-unit")) {
+      return true;
+    }
+    if (parent.tagName === "SCRIPT" || parent.tagName === "STYLE" || parent.tagName === "TEMPLATE") {
+      return true;
+    }
+    parent = parent.parentElement;
+  }
+  return false;
+}
+
+function containsCjkText(value) {
+  return Array.from(String(value || "")).some((character) => isCjkCharacter(character));
+}
+
+function maybeRunBpmfCoverageTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("coveragetest") !== "1") {
+    return;
+  }
+  window.setTimeout(() => {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const issues = [];
+    let checked = 0;
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const text = String(node.nodeValue || "").trim();
+      if (!text || !containsCjkText(text)) {
+        continue;
+      }
+      checked += 1;
+      if (!textNodeIsCoveredByBpmf(node)) {
+        issues.push(text.slice(0, 12));
+      }
+    }
+    const marker = document.createElement("div");
+    marker.id = "bpmfCoverageTestResult";
+    marker.dataset.checkedTextNodes = String(checked);
+    marker.dataset.issueCount = String(issues.length);
+    marker.textContent = issues.length === 0 ? "PASS" : `FAIL ${issues.slice(0, 8).join(",")}`;
+    document.body.appendChild(marker);
+  }, 1000);
+}
+
 function maybeRunSelfTest() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("selftest") !== "1") {
@@ -1147,6 +1545,7 @@ function bindEvents() {
     tab.addEventListener("click", () => setMode(tab.dataset.mode));
   });
   elements.searchInput.addEventListener("input", filterWords);
+  elements.initialFilter.addEventListener("change", filterWords);
   elements.levelFilter.addEventListener("change", filterWords);
   elements.topicFilter.addEventListener("change", filterWords);
   elements.shuffleButton.addEventListener("click", () => {
@@ -1233,6 +1632,7 @@ function bindEvents() {
 }
 
 async function init() {
+  hydrateStaticBpmf();
   bindEvents();
   initSpeechEngine();
   elements.sourceAudio.volume = SPEECH_SETTINGS.volume;
@@ -1241,6 +1641,7 @@ async function init() {
     rebuildWordIndex();
     state.knownWords = loadKnownWords();
     state.filteredWords = state.words.slice();
+    buildInitialFilter();
     buildTopicFilter();
     updateStats();
     renderPracticeCard();
@@ -1248,6 +1649,9 @@ async function init() {
       setMode("exam");
     }
     maybeRunSelfTest();
+    maybeRunZhuyinLayoutTest();
+    maybeRunInitialFilterTest();
+    maybeRunBpmfCoverageTest();
   } catch (error) {
     renderEmptyPractice();
     elements.exampleText.textContent = "Data failed to load. Please run the site through a local server or GitHub Pages.";

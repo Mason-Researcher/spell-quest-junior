@@ -325,7 +325,7 @@ h1 {
   line-height: 1;
 }
 
-.stat-grid span {
+.stat-grid > div > span {
   display: block;
   margin-top: 8px;
   color: var(--muted);
@@ -338,7 +338,7 @@ h1 {
 }
 
 .audio-panel label,
-.toolbar label span {
+.toolbar label > span {
   display: block;
   margin-bottom: 6px;
   color: var(--muted);
@@ -373,7 +373,7 @@ h1 {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(160px, 1.3fr) minmax(130px, 0.7fr) minmax(150px, 0.8fr) auto;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(96px, 0.42fr) minmax(120px, 0.6fr) minmax(140px, 0.75fr) auto;
   gap: 10px;
   align-items: end;
   margin-bottom: 14px;
@@ -573,68 +573,118 @@ h1 {
 .taiwan-zhuyin {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px 6px;
-  align-items: center;
+  gap: 0.1em 0.08em;
+  align-items: baseline;
   max-width: 100%;
   vertical-align: middle;
   letter-spacing: 0;
-  line-height: 2.15;
+  line-height: 1.85;
 }
 
 .bpmf-unit {
-  position: relative;
-  display: inline-block;
-  min-width: 1.78em;
-  min-height: 2.38em;
-  margin-inline-end: 3px;
-  padding-right: 0.86em;
-  vertical-align: middle;
+  display: inline-grid;
+  grid-template-columns: max-content 0.56em;
+  column-gap: 0.14em;
+  align-items: center;
+  justify-content: start;
+  min-height: 1.28em;
+  margin-inline-end: 0.1em;
+  vertical-align: baseline;
 }
 
 .bpmf-han {
-  position: absolute;
-  left: 0;
-  top: 50%;
   display: block;
-  transform: translateY(-50%);
+  grid-column: 1;
   color: inherit;
+  font-family: "DFKai-SB", "BiauKai", "KaiTi", "Microsoft JhengHei", sans-serif;
   font-size: 1em;
   font-weight: 900;
-  line-height: 1.08;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .bpmf-mark {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  display: block;
-  transform: translateY(-50%);
+  display: grid;
+  grid-column: 2;
+  grid-template-columns: 0.38em 0.16em;
+  column-gap: 0.02em;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 0.54em;
+  height: 1em;
   color: #26394f;
-  font-size: 0.64em;
+  font-family: "DFKai-SB", "BiauKai", "KaiTi", "Microsoft JhengHei", sans-serif;
+  font-size: 0.46em;
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0;
   text-align: center;
-  text-orientation: upright;
-  writing-mode: vertical-rl;
+  white-space: nowrap;
+  transform: translateY(-0.03em);
+}
+
+.bpmf-mark-short {
+  font-size: 0.5em;
+}
+
+.bpmf-mark-long {
+  font-size: 0.42em;
+}
+
+.bpmf-sound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 1em;
+}
+
+.bpmf-symbol {
+  display: block;
+  line-height: 0.78;
+}
+
+.bpmf-mark-long .bpmf-symbol {
+  line-height: 0.72;
+}
+
+.bpmf-tone {
+  display: block;
+  align-self: center;
+  font-size: 0.88em;
+  line-height: 1;
+}
+
+.bpmf-tone-empty {
+  visibility: hidden;
 }
 
 .no-bpmf {
-  min-width: auto;
-  min-height: 1.25em;
-  padding-right: 0;
+  display: inline-flex;
+  min-height: auto;
+  margin-inline-end: 0.12em;
 }
 
 .no-bpmf .bpmf-han {
-  position: static;
   display: inline;
-  transform: none;
   font-weight: inherit;
 }
 
 .bpmf-label {
   margin-inline-end: 4px;
   color: #173458;
+}
+
+.bpmf-static {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: baseline;
+}
+
+.bpmf-static-text {
+  vertical-align: baseline;
 }
 
 .bpmf-content {
@@ -658,7 +708,31 @@ h1 {
 
 .example-translation .taiwan-zhuyin,
 .zh-hint .taiwan-zhuyin {
-  font-size: 1.18rem;
+  font-size: 1.08rem;
+  line-height: 2.05;
+}
+
+.stat-grid .static-zhuyin {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.stat-grid .taiwan-zhuyin {
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1.9;
+}
+
+.stat-grid .bpmf-unit {
+  display: inline-grid;
+  grid-template-columns: max-content 0.56em;
+  column-gap: 0.14em;
+  min-height: 1.34em;
+  margin-inline-end: 0.04em;
+}
+
+.stat-grid .bpmf-mark {
+  font-size: 0.42em;
 }
 
 .zhuyin-line {
@@ -914,7 +988,7 @@ h1 {
     line-height: 1.6;
   }
 
-  .hero-note span {
+  .hero-note > span {
     display: block;
   }
 
