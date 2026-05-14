@@ -53,6 +53,7 @@ const state = {
   wordById: new Map(),
   filteredWords: [],
   currentIndex: 0,
+  activeContextIndex: 0,
   knownWords: new Set(),
   examWords: [],
   examIndex: 0,
@@ -81,9 +82,15 @@ const elements = {
   meaningText: document.getElementById("meaningText"),
   topicText: document.getElementById("topicText"),
   exampleText: document.getElementById("exampleText"),
+  exampleZhText: document.getElementById("exampleZhText"),
+  exampleZhuyinText: document.getElementById("exampleZhuyinText"),
   exampleZhHint: document.getElementById("exampleZhHint"),
+  contextTabs: document.getElementById("contextTabs"),
   usageText: document.getElementById("usageText"),
+  contextZhText: document.getElementById("contextZhText"),
+  contextZhuyinText: document.getElementById("contextZhuyinText"),
   usageZhHint: document.getElementById("usageZhHint"),
+  contextUsageZhuyin: document.getElementById("contextUsageZhuyin"),
   practiceLetters: document.getElementById("practiceLetters"),
   speakButton: document.getElementById("speakButton"),
   speakMeaningZh: document.getElementById("speakMeaningZh"),
@@ -282,6 +289,59 @@ function currentPracticeWord() {
   return state.filteredWords[state.currentIndex];
 }
 
+function isApprovedLearningContent(word) {
+  return Boolean(word && word.contentReview && word.contentReview.status === "approved");
+}
+
+function approvedContexts(word) {
+  if (!isApprovedLearningContent(word) || !Array.isArray(word.contexts)) {
+    return [];
+  }
+  return word.contexts.filter((context) => {
+    if (!context || context.reviewStatus !== "approved") {
+      return false;
+    }
+    const requiredValues = [
+      context.id,
+      context.labelZh,
+      context.labelZhuyin,
+      context.sentence,
+      context.sentenceZh,
+      context.sentenceZhuyin,
+      context.usageZh,
+      context.usageZhuyin
+    ];
+    return requiredValues.every((value) => String(value || "").trim().length > 0);
+  });
+}
+
+function activePracticeContext(word) {
+  const contexts = approvedContexts(word);
+  if (contexts.length === 0) {
+    return null;
+  }
+  if (state.activeContextIndex < 0 || state.activeContextIndex >= contexts.length) {
+    state.activeContextIndex = 0;
+  }
+  return contexts[state.activeContextIndex];
+}
+
+function setHidden(element, hidden) {
+  if (element) {
+    element.classList.toggle("hidden", hidden);
+  }
+}
+
+function setText(element, text) {
+  if (element) {
+    element.textContent = text;
+  }
+}
+
+function contextAudioClipType(context, target) {
+  return context ? `context-${context.id}-${target}` : "usage";
+}
+
 function buildTopicFilter() {
   const topics = [];
   state.words.forEach((word) => {
@@ -342,10 +402,89 @@ function renderEmptyPractice() {
   elements.meaningText.innerHTML = ruby("沒有符合條件的單字", "ㄇㄟˊ ㄧㄡˇ ㄈㄨˊ ㄏㄜˊ ㄊㄧㄠˊ ㄐㄧㄢˋ ㄉㄜ˙ ㄉㄢ ㄗˋ");
   elements.topicText.textContent = "";
   elements.exampleText.textContent = "";
+  setText(elements.exampleZhText, "");
+  setText(elements.exampleZhuyinText, "");
   elements.exampleZhHint.textContent = "";
+  if (elements.contextTabs) {
+    elements.contextTabs.innerHTML = "";
+  }
+  setHidden(elements.contextTabs, true);
   elements.usageText.textContent = "";
+  setText(elements.contextZhText, "");
+  setText(elements.contextZhuyinText, "");
   elements.usageZhHint.textContent = "";
+  setText(elements.contextUsageZhuyin, "");
   elements.practiceLetters.innerHTML = "";
+}
+
+function renderExampleDetails(word) {
+  elements.exampleText.textContent = word.example;
+  if (isApprovedLearningContent(word) && word.exampleZh && word.exampleZhuyin) {
+    elements.exampleZhText.innerHTML = `${ruby("中文翻譯", "ㄓㄨㄥ ㄨㄣˊ ㄈㄢ ㄧˋ")}：${word.exampleZh}`;
+    elements.exampleZhuyinText.textContent = word.exampleZhuyin;
+    elements.exampleZhHint.innerHTML = `${ruby("學習重點", "ㄒㄩㄝˊ ㄒㄧˊ ㄓㄨㄥˋ ㄉㄧㄢˇ")}：${word.topicZh}（${word.topicZhuyin}）`;
+    setHidden(elements.exampleZhText, false);
+    setHidden(elements.exampleZhuyinText, false);
+    return;
+  }
+  setText(elements.exampleZhText, "");
+  setText(elements.exampleZhuyinText, "");
+  setHidden(elements.exampleZhText, true);
+  setHidden(elements.exampleZhuyinText, true);
+  elements.exampleZhHint.innerHTML = `${ruby("中文提示", "ㄓㄨㄥ ㄨㄣˊ ㄊㄧˊ ㄕˋ")}：${word.zh}（${word.zhuyin}） · ${ruby("主題", "ㄓㄨˇ ㄊㄧˊ")}：${word.topicZh}（${word.topicZhuyin}）`;
+}
+
+function renderContextTabs(word) {
+  const contexts = approvedContexts(word);
+  if (!elements.contextTabs) {
+    return;
+  }
+  elements.contextTabs.innerHTML = "";
+  if (contexts.length === 0) {
+    setHidden(elements.contextTabs, true);
+    return;
+  }
+  if (state.activeContextIndex >= contexts.length) {
+    state.activeContextIndex = 0;
+  }
+  setHidden(elements.contextTabs, false);
+  contexts.forEach((context, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "context-tab";
+    button.classList.toggle("active", index === state.activeContextIndex);
+    button.setAttribute("aria-pressed", index === state.activeContextIndex ? "true" : "false");
+    button.innerHTML = ruby(context.labelZh, context.labelZhuyin);
+    button.addEventListener("click", () => {
+      state.activeContextIndex = index;
+      renderContextTabs(word);
+      renderPracticeContext(word);
+    });
+    elements.contextTabs.appendChild(button);
+  });
+}
+
+function renderPracticeContext(word) {
+  const context = activePracticeContext(word);
+  if (context) {
+    elements.usageText.textContent = context.sentence;
+    elements.contextZhText.innerHTML = `${ruby("中文翻譯", "ㄓㄨㄥ ㄨㄣˊ ㄈㄢ ㄧˋ")}：${context.sentenceZh}`;
+    elements.contextZhuyinText.textContent = context.sentenceZhuyin;
+    elements.usageZhHint.innerHTML = `${ruby("應用任務", "ㄧㄥˋ ㄩㄥˋ ㄖㄣˋ ㄨˋ")}：${context.usageZh}`;
+    elements.contextUsageZhuyin.textContent = context.usageZhuyin;
+    setHidden(elements.contextZhText, false);
+    setHidden(elements.contextZhuyinText, false);
+    setHidden(elements.contextUsageZhuyin, false);
+    return;
+  }
+  elements.usageText.textContent = word.usage;
+  setText(elements.contextZhText, "");
+  setText(elements.contextZhuyinText, "");
+  setHidden(elements.contextZhText, true);
+  setHidden(elements.contextZhuyinText, true);
+  elements.usageZhHint.innerHTML = `${ruby("中文任務", "ㄓㄨㄥ ㄨㄣˊ ㄖㄣˋ ㄨˋ")}：用 ${word.word} 表達「${word.zh}（${word.zhuyin}）」這個概念。`;
+  elements.contextUsageZhuyin.textContent = `ㄩㄥˋ ${word.word} ㄅㄧㄠˇ ㄉㄚˊ「${word.zhuyin}」ㄓㄜˋ ㄍㄜ˙ ㄍㄞˋ ㄋㄧㄢˋ。`;
+  setHidden(elements.contextUsageZhuyin, false);
 }
 
 function renderPracticeCard() {
@@ -354,6 +493,7 @@ function renderPracticeCard() {
     renderEmptyPractice();
     return;
   }
+  state.activeContextIndex = 0;
   elements.wordSource.textContent = word.source;
   elements.wordLevel.textContent = word.level;
   elements.wordStar.classList.toggle("hidden", !word.starred);
@@ -361,10 +501,9 @@ function renderPracticeCard() {
   elements.wordPos.textContent = word.pos;
   elements.meaningText.textContent = `${word.zh}（${word.zhuyin}）`;
   elements.topicText.textContent = `${word.topicZh}（${word.topicZhuyin}）`;
-  elements.exampleText.textContent = word.example;
-  elements.exampleZhHint.textContent = `中文提示：${word.zh}，主題：${word.topicZh}`;
-  elements.usageText.textContent = word.usage;
-  elements.usageZhHint.textContent = `中文任務：用 ${word.word} 表達「${word.zh}」這個概念。`;
+  renderExampleDetails(word);
+  renderContextTabs(word);
+  renderPracticeContext(word);
   renderPracticeLetters(word.word);
   updateKnownButton(word);
 }
@@ -645,6 +784,10 @@ function speakExampleAudio(word) {
 }
 
 function speakUsageAudio(word) {
+  const context = activePracticeContext(word);
+  if (context) {
+    return speakClip(word, contextAudioClipType(context, "en"), context.sentence, "en-US", 0.88);
+  }
   return speakClip(word, "usage", word.usage, "en-US", 0.88);
 }
 
@@ -661,7 +804,9 @@ function speakExampleZhAudio(word) {
 }
 
 function speakUsageZhAudio(word) {
-  return speakClip(word, "usageZh", usageChineseSpeech(word), "zh-TW", 0.92);
+  const context = activePracticeContext(word);
+  const clipType = context ? contextAudioClipType(context, "zh") : "usageZh";
+  return speakClip(word, clipType, usageChineseSpeech(word), "zh-TW", 0.92);
 }
 
 function speakExamHintAudio(word) {
@@ -669,10 +814,17 @@ function speakExamHintAudio(word) {
 }
 
 function exampleChineseSpeech(word) {
+  if (isApprovedLearningContent(word) && word.exampleZh) {
+    return `英文例句中文翻譯。${word.exampleZh}`;
+  }
   return `英文例句。單字是 ${word.word}，中文意思是 ${word.zh}，主題是 ${word.topicZh}。請聽英文句子：${word.example}`;
 }
 
 function usageChineseSpeech(word) {
+  const context = activePracticeContext(word);
+  if (context) {
+    return `應用任務。${context.usageZh}。中文翻譯。${context.sentenceZh}`;
+  }
   return `應用任務。請用 ${word.word} 表達 ${word.zh} 這個概念。`;
 }
 
@@ -837,18 +989,49 @@ function fillCorrectExamAnswerForSelfTest() {
   return allPicked;
 }
 
+function practiceContextSelfTestPassed() {
+  const word = currentPracticeWord();
+  if (!word || word.id !== "D001") {
+    return false;
+  }
+  const contextButtons = elements.contextTabs ? elements.contextTabs.querySelectorAll(".context-tab") : [];
+  return approvedContexts(word).length >= 3 &&
+    contextButtons.length >= 3 &&
+    elements.exampleZhText.textContent.includes("我每天在上課前做拼字暖身練習") &&
+    elements.exampleZhuyinText.textContent.includes("ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ") &&
+    elements.usageText.textContent.includes("daily") &&
+    elements.contextZhText.textContent.includes("我在導師時間前查看每日行程") &&
+    elements.contextUsageZhuyin.textContent.includes("daily");
+}
+
+function practiceContextSwitchSelfTestPassed() {
+  const word = currentPracticeWord();
+  const contexts = approvedContexts(word);
+  if (!word || word.id !== "D001" || contexts.length < 2) {
+    return false;
+  }
+  state.activeContextIndex = 1;
+  renderContextTabs(word);
+  renderPracticeContext(word);
+  return elements.usageText.textContent === contexts[1].sentence &&
+    elements.contextZhText.textContent.includes(contexts[1].sentenceZh) &&
+    elements.contextUsageZhuyin.textContent === contexts[1].usageZhuyin;
+}
+
 function maybeRunSelfTest() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("selftest") !== "1") {
     return;
   }
+  const practicePassed = practiceContextSelfTestPassed();
+  const contextSwitchPassed = practiceContextSwitchSelfTestPassed();
   setMode("exam");
   window.setTimeout(() => {
     const filled = fillCorrectExamAnswerForSelfTest();
     const checked = checkAnswer();
     const marker = document.createElement("div");
     marker.id = "selfTestResult";
-    marker.textContent = filled && checked ? "PASS" : "FAIL";
+    marker.textContent = practicePassed && contextSwitchPassed && filled && checked ? "PASS" : "FAIL";
     document.body.appendChild(marker);
   }, 600);
 }

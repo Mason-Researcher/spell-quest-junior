@@ -147,6 +147,8 @@
               </div>
             </div>
             <p id="exampleText">Example sentence.</p>
+            <p id="exampleZhText" class="example-translation">中文翻譯</p>
+            <p id="exampleZhuyinText" class="zhuyin-line">注音</p>
             <p id="exampleZhHint" class="zh-hint">中文提示</p>
           </section>
           <section class="example-box muted">
@@ -163,8 +165,12 @@
                 </button>
               </div>
             </div>
+            <div id="contextTabs" class="context-tabs" aria-label="情境分類"></div>
             <p id="usageText">Usage prompt.</p>
+            <p id="contextZhText" class="example-translation">中文翻譯</p>
+            <p id="contextZhuyinText" class="zhuyin-line">注音</p>
             <p id="usageZhHint" class="zh-hint">中文任務</p>
+            <p id="contextUsageZhuyin" class="zhuyin-line compact">注音</p>
           </section>
           <div class="letter-strip" id="practiceLetters" aria-label="Word letters"></div>
           <div class="card-actions">
@@ -222,6 +228,6 @@
     <button class="letter-tile" type="button"></button>
   </template>
 
-  <script src="app.js?v=20260513-audio-playback"></script>
+  <script src="app.js?v=20260514-context-tabs"></script>
 </body>
 </html>

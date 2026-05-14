@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "deploy": "wrangler pages deploy site --project-name spell-quest-junior --branch main"
+    "deploy": "wrangler pages deploy site --project-name spell-quest-junior --branch main",
+    "validate:contexts": "node tools/validate_context_data.js"
   },
   "devDependencies": {
     "wrangler": "4.88.0"
