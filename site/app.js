@@ -118,8 +118,108 @@ const elements = {
   examHint: document.getElementById("examHint")
 };
 
+const LABEL_PAIRS = {
+  translation: [
+    { text: "中", bpmf: "ㄓㄨㄥ" },
+    { text: "文", bpmf: "ㄨㄣˊ" },
+    { text: "翻", bpmf: "ㄈㄢ" },
+    { text: "譯", bpmf: "ㄧˋ" }
+  ],
+  learningFocus: [
+    { text: "學", bpmf: "ㄒㄩㄝˊ" },
+    { text: "習", bpmf: "ㄒㄧˊ" },
+    { text: "重", bpmf: "ㄓㄨㄥˋ" },
+    { text: "點", bpmf: "ㄉㄧㄢˇ" }
+  ],
+  usageTask: [
+    { text: "應", bpmf: "ㄧㄥˋ" },
+    { text: "用", bpmf: "ㄩㄥˋ" },
+    { text: "任", bpmf: "ㄖㄣˋ" },
+    { text: "務", bpmf: "ㄨˋ" }
+  ],
+  chineseHint: [
+    { text: "中", bpmf: "ㄓㄨㄥ" },
+    { text: "文", bpmf: "ㄨㄣˊ" },
+    { text: "提", bpmf: "ㄊㄧˊ" },
+    { text: "示", bpmf: "ㄕˋ" }
+  ],
+  topic: [
+    { text: "主", bpmf: "ㄓㄨˇ" },
+    { text: "題", bpmf: "ㄊㄧˊ" }
+  ],
+  chineseTask: [
+    { text: "中", bpmf: "ㄓㄨㄥ" },
+    { text: "文", bpmf: "ㄨㄣˊ" },
+    { text: "任", bpmf: "ㄖㄣˋ" },
+    { text: "務", bpmf: "ㄨˋ" }
+  ]
+};
+
 function ruby(text, zhuyin) {
   return `<ruby>${text}<rt>${zhuyin}</rt></ruby>`;
+}
+
+function isZhuyinPairs(pairs) {
+  return Array.isArray(pairs) &&
+    pairs.length > 0 &&
+    pairs.every((pair) => pair && String(pair.text || "").length > 0 && "bpmf" in pair);
+}
+
+function createZhuyinPhrase(pairs, extraClass = "") {
+  const phrase = document.createElement("span");
+  phrase.className = `taiwan-zhuyin${extraClass ? ` ${extraClass}` : ""}`;
+  pairs.forEach((pair) => {
+    const unit = document.createElement("span");
+    const text = String(pair.text || "");
+    const bpmf = String(pair.bpmf || "");
+    unit.className = bpmf ? "bpmf-unit" : "bpmf-unit no-bpmf";
+    const han = document.createElement("span");
+    han.className = "bpmf-han";
+    han.textContent = text;
+    unit.appendChild(han);
+    if (bpmf) {
+      const mark = document.createElement("span");
+      mark.className = "bpmf-mark";
+      mark.textContent = bpmf;
+      unit.appendChild(mark);
+    }
+    phrase.appendChild(unit);
+  });
+  return phrase;
+}
+
+function renderZhuyinPhrase(element, pairs, fallbackText, fallbackZhuyin, extraClass = "") {
+  if (!element) {
+    return;
+  }
+  element.innerHTML = "";
+  if (isZhuyinPairs(pairs)) {
+    element.appendChild(createZhuyinPhrase(pairs, extraClass));
+    return;
+  }
+  element.textContent = `${fallbackText}（${fallbackZhuyin}）`;
+}
+
+function renderLabelAndPhrase(element, labelPairs, contentPairs, fallbackLabel, fallbackText, fallbackZhuyin) {
+  if (!element) {
+    return;
+  }
+  element.innerHTML = "";
+  if (isZhuyinPairs(contentPairs)) {
+    const label = createZhuyinPhrase(labelPairs, "bpmf-label");
+    element.appendChild(label);
+    element.appendChild(document.createTextNode("："));
+    element.appendChild(createZhuyinPhrase(contentPairs, "bpmf-content"));
+    return;
+  }
+  element.textContent = `${fallbackLabel}：${fallbackText}（${fallbackZhuyin}）`;
+}
+
+function pairText(pairs) {
+  if (!isZhuyinPairs(pairs)) {
+    return "";
+  }
+  return pairs.map((pair) => pair.text).join("");
 }
 
 function topicLabel(word) {
@@ -419,12 +519,12 @@ function renderEmptyPractice() {
 
 function renderExampleDetails(word) {
   elements.exampleText.textContent = word.example;
-  if (isApprovedLearningContent(word) && word.exampleZh && word.exampleZhuyin) {
-    elements.exampleZhText.innerHTML = `${ruby("中文翻譯", "ㄓㄨㄥ ㄨㄣˊ ㄈㄢ ㄧˋ")}：${word.exampleZh}`;
-    elements.exampleZhuyinText.textContent = word.exampleZhuyin;
-    elements.exampleZhHint.innerHTML = `${ruby("學習重點", "ㄒㄩㄝˊ ㄒㄧˊ ㄓㄨㄥˋ ㄉㄧㄢˇ")}：${word.topicZh}（${word.topicZhuyin}）`;
+  if (isApprovedLearningContent(word) && word.exampleZh && word.exampleZhuyin && isZhuyinPairs(word.exampleZhPairs)) {
+    renderLabelAndPhrase(elements.exampleZhText, LABEL_PAIRS.translation, word.exampleZhPairs, "中文翻譯", word.exampleZh, word.exampleZhuyin);
+    setText(elements.exampleZhuyinText, "");
+    renderLabelAndPhrase(elements.exampleZhHint, LABEL_PAIRS.learningFocus, word.topicZhPairs, "學習重點", word.topicZh, word.topicZhuyin);
     setHidden(elements.exampleZhText, false);
-    setHidden(elements.exampleZhuyinText, false);
+    setHidden(elements.exampleZhuyinText, true);
     return;
   }
   setText(elements.exampleZhText, "");
@@ -454,7 +554,11 @@ function renderContextTabs(word) {
     button.className = "context-tab";
     button.classList.toggle("active", index === state.activeContextIndex);
     button.setAttribute("aria-pressed", index === state.activeContextIndex ? "true" : "false");
-    button.innerHTML = ruby(context.labelZh, context.labelZhuyin);
+    if (isZhuyinPairs(context.labelZhPairs)) {
+      button.appendChild(createZhuyinPhrase(context.labelZhPairs, "bpmf-tab"));
+    } else {
+      button.innerHTML = ruby(context.labelZh, context.labelZhuyin);
+    }
     button.addEventListener("click", () => {
       state.activeContextIndex = index;
       renderContextTabs(word);
@@ -466,15 +570,15 @@ function renderContextTabs(word) {
 
 function renderPracticeContext(word) {
   const context = activePracticeContext(word);
-  if (context) {
+  if (context && isZhuyinPairs(context.sentenceZhPairs) && isZhuyinPairs(context.usageZhPairs)) {
     elements.usageText.textContent = context.sentence;
-    elements.contextZhText.innerHTML = `${ruby("中文翻譯", "ㄓㄨㄥ ㄨㄣˊ ㄈㄢ ㄧˋ")}：${context.sentenceZh}`;
-    elements.contextZhuyinText.textContent = context.sentenceZhuyin;
-    elements.usageZhHint.innerHTML = `${ruby("應用任務", "ㄧㄥˋ ㄩㄥˋ ㄖㄣˋ ㄨˋ")}：${context.usageZh}`;
-    elements.contextUsageZhuyin.textContent = context.usageZhuyin;
+    renderLabelAndPhrase(elements.contextZhText, LABEL_PAIRS.translation, context.sentenceZhPairs, "中文翻譯", context.sentenceZh, context.sentenceZhuyin);
+    setText(elements.contextZhuyinText, "");
+    renderLabelAndPhrase(elements.usageZhHint, LABEL_PAIRS.usageTask, context.usageZhPairs, "應用任務", context.usageZh, context.usageZhuyin);
+    setText(elements.contextUsageZhuyin, "");
     setHidden(elements.contextZhText, false);
-    setHidden(elements.contextZhuyinText, false);
-    setHidden(elements.contextUsageZhuyin, false);
+    setHidden(elements.contextZhuyinText, true);
+    setHidden(elements.contextUsageZhuyin, true);
     return;
   }
   elements.usageText.textContent = word.usage;
@@ -483,8 +587,8 @@ function renderPracticeContext(word) {
   setHidden(elements.contextZhText, true);
   setHidden(elements.contextZhuyinText, true);
   elements.usageZhHint.innerHTML = `${ruby("中文任務", "ㄓㄨㄥ ㄨㄣˊ ㄖㄣˋ ㄨˋ")}：用 ${word.word} 表達「${word.zh}（${word.zhuyin}）」這個概念。`;
-  elements.contextUsageZhuyin.textContent = `ㄩㄥˋ ${word.word} ㄅㄧㄠˇ ㄉㄚˊ「${word.zhuyin}」ㄓㄜˋ ㄍㄜ˙ ㄍㄞˋ ㄋㄧㄢˋ。`;
-  setHidden(elements.contextUsageZhuyin, false);
+  setText(elements.contextUsageZhuyin, "");
+  setHidden(elements.contextUsageZhuyin, true);
 }
 
 function renderPracticeCard() {
@@ -499,8 +603,8 @@ function renderPracticeCard() {
   elements.wordStar.classList.toggle("hidden", !word.starred);
   elements.wordText.textContent = word.word;
   elements.wordPos.textContent = word.pos;
-  elements.meaningText.textContent = `${word.zh}（${word.zhuyin}）`;
-  elements.topicText.textContent = `${word.topicZh}（${word.topicZhuyin}）`;
+  renderZhuyinPhrase(elements.meaningText, word.zhPairs, word.zh, word.zhuyin, "bpmf-meaning");
+  renderZhuyinPhrase(elements.topicText, word.topicZhPairs, word.topicZh, word.topicZhuyin, "bpmf-topic");
   renderExampleDetails(word);
   renderContextTabs(word);
   renderPracticeContext(word);
@@ -997,11 +1101,13 @@ function practiceContextSelfTestPassed() {
   const contextButtons = elements.contextTabs ? elements.contextTabs.querySelectorAll(".context-tab") : [];
   return approvedContexts(word).length >= 3 &&
     contextButtons.length >= 3 &&
-    elements.exampleZhText.textContent.includes("我每天在上課前做拼字暖身練習") &&
-    elements.exampleZhuyinText.textContent.includes("ㄨㄛˇ ㄇㄟˇ ㄊㄧㄢ") &&
+    pairText(word.exampleZhPairs) === "我每天在上課前做拼字暖身練習。" &&
+    elements.exampleZhText.querySelectorAll(".bpmf-unit").length >= 10 &&
     elements.usageText.textContent.includes("daily") &&
-    elements.contextZhText.textContent.includes("我在導師時間前查看每日行程") &&
-    elements.contextUsageZhuyin.textContent.includes("daily");
+    pairText(word.contexts[0].sentenceZhPairs) === "我在導師時間前查看每日行程。" &&
+    pairText(word.contexts[0].usageZhPairs).includes("daily") &&
+    elements.contextZhuyinText.classList.contains("hidden") &&
+    elements.contextUsageZhuyin.classList.contains("hidden");
 }
 
 function practiceContextSwitchSelfTestPassed() {
@@ -1014,8 +1120,8 @@ function practiceContextSwitchSelfTestPassed() {
   renderContextTabs(word);
   renderPracticeContext(word);
   return elements.usageText.textContent === contexts[1].sentence &&
-    elements.contextZhText.textContent.includes(contexts[1].sentenceZh) &&
-    elements.contextUsageZhuyin.textContent === contexts[1].usageZhuyin;
+    pairText(contexts[1].sentenceZhPairs) === contexts[1].sentenceZh &&
+    pairText(contexts[1].usageZhPairs) === contexts[1].usageZh;
 }
 
 function maybeRunSelfTest() {

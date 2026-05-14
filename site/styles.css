@@ -49,7 +49,7 @@ button {
 
 rt {
   color: #26394f;
-  font-size: 0.76em;
+  font-size: 0.84em;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.15;
@@ -570,6 +570,82 @@ h1 {
   font-weight: 800;
 }
 
+.taiwan-zhuyin {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px 6px;
+  align-items: center;
+  max-width: 100%;
+  vertical-align: middle;
+  letter-spacing: 0;
+  line-height: 2.15;
+}
+
+.bpmf-unit {
+  position: relative;
+  display: inline-block;
+  min-width: 1.78em;
+  min-height: 2.38em;
+  margin-inline-end: 3px;
+  padding-right: 0.86em;
+  vertical-align: middle;
+}
+
+.bpmf-han {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  display: block;
+  transform: translateY(-50%);
+  color: inherit;
+  font-size: 1em;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.bpmf-mark {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  display: block;
+  transform: translateY(-50%);
+  color: #26394f;
+  font-size: 0.64em;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  text-orientation: upright;
+  writing-mode: vertical-rl;
+}
+
+.no-bpmf {
+  min-width: auto;
+  min-height: 1.25em;
+  padding-right: 0;
+}
+
+.no-bpmf .bpmf-han {
+  position: static;
+  display: inline;
+  transform: none;
+  font-weight: inherit;
+}
+
+.bpmf-label {
+  margin-inline-end: 4px;
+  color: #173458;
+}
+
+.bpmf-content {
+  margin-inline-start: 4px;
+}
+
+.bpmf-meaning,
+.bpmf-topic {
+  font-size: 1.12rem;
+}
+
 .example-translation {
   margin-top: 12px !important;
   padding: 10px 12px;
@@ -578,6 +654,11 @@ h1 {
   color: #173458;
   background: rgba(255, 255, 255, 0.72);
   font-weight: 900;
+}
+
+.example-translation .taiwan-zhuyin,
+.zh-hint .taiwan-zhuyin {
+  font-size: 1.18rem;
 }
 
 .zhuyin-line {
@@ -603,13 +684,22 @@ h1 {
 
 .context-tab {
   min-height: 40px;
-  padding: 8px 12px;
+  padding: 8px 12px 9px;
   border: 2px solid #bdd0e8;
   border-radius: 8px;
   color: var(--ink);
   background: #ffffff;
   font-weight: 900;
   box-shadow: inset 0 -3px 0 rgba(23, 35, 58, 0.08);
+}
+
+.context-tab .bpmf-tab {
+  justify-content: center;
+  font-size: 0.98rem;
+}
+
+.context-tab .bpmf-mark {
+  color: #26394f;
 }
 
 .context-tab.active,
@@ -622,6 +712,11 @@ h1 {
 
 .context-tab.active rt,
 .context-tab:hover rt {
+  color: #ffffff;
+}
+
+.context-tab.active .bpmf-mark,
+.context-tab:hover .bpmf-mark {
   color: #ffffff;
 }
 

@@ -1,6 +1,7 @@
 {
   "scripts": {
     "deploy": "wrangler pages deploy site --project-name spell-quest-junior --branch main",
+    "sync:zhuyin-pairs": "node tools/sync_zhuyin_pairs.js",
     "validate:contexts": "node tools/validate_context_data.js"
   },
   "devDependencies": {

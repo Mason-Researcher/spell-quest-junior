@@ -19,6 +19,7 @@ const goldenWordIds = [
 const requiredWordFields = [
   "exampleZh",
   "exampleZhuyin",
+  "exampleZhPairs",
   "contexts",
   "contentReview"
 ];
@@ -28,11 +29,14 @@ const requiredContextFields = [
   "level",
   "labelZh",
   "labelZhuyin",
+  "labelZhPairs",
   "sentence",
   "sentenceZh",
   "sentenceZhuyin",
+  "sentenceZhPairs",
   "usageZh",
   "usageZhuyin",
+  "usageZhPairs",
   "sourceBasis",
   "reviewStatus"
 ];
@@ -60,6 +64,41 @@ function hasBopomofo(value) {
     }
   }
   return false;
+}
+
+function pairText(pairs) {
+  if (!Array.isArray(pairs)) {
+    return "";
+  }
+  return pairs.map((pair) => String(pair && pair.text ? pair.text : "")).join("");
+}
+
+function validatePairArray(owner, text, pairs) {
+  if (!Array.isArray(pairs) || pairs.length < 1) {
+    fail(`${owner} zhuyin pair array is required`);
+    return;
+  }
+  if (pairText(pairs) !== text) {
+    fail(`${owner} zhuyin pair text does not match source text`);
+  }
+  for (const pair of pairs) {
+    if (!pair || String(pair.text || "").length === 0 || !("bpmf" in pair)) {
+      fail(`${owner} has invalid zhuyin pair`);
+      continue;
+    }
+    if (hasForbiddenPlaceholder(pair.text) || hasForbiddenPlaceholder(pair.bpmf)) {
+      fail(`${owner} zhuyin pair contains placeholder text`);
+    }
+    if (pair.bpmf && !hasBopomofo(pair.bpmf)) {
+      fail(`${owner} zhuyin pair has non-bopomofo bpmf: ${pair.bpmf}`);
+    }
+  }
+}
+
+function isPairField(field) {
+  return field === "labelZhPairs" ||
+    field === "sentenceZhPairs" ||
+    field === "usageZhPairs";
 }
 
 function hasForbiddenPlaceholder(value) {
@@ -94,6 +133,11 @@ function hasLearnerDictionarySources(sourceRefs) {
 const words = JSON.parse(fs.readFileSync(wordsPath, "utf8"));
 const wordById = new Map(words.map((word) => [word.id, word]));
 
+for (const word of words) {
+  validatePairArray(`${word.id} zh`, word.zh, word.zhPairs);
+  validatePairArray(`${word.id} topicZh`, word.topicZh, word.topicZhPairs);
+}
+
 for (const id of goldenWordIds) {
   const word = wordById.get(id);
   if (!word) {
@@ -119,6 +163,7 @@ for (const id of goldenWordIds) {
   if (hasForbiddenPlaceholder(word.exampleZh) || hasForbiddenPlaceholder(word.exampleZhuyin)) {
     fail(`${id} example translation contains placeholder text`);
   }
+  validatePairArray(`${id} exampleZh`, word.exampleZh, word.exampleZhPairs);
   if (!word.contentReview || word.contentReview.status !== "approved") {
     fail(`${id} contentReview.status must be approved`);
   }
@@ -158,12 +203,19 @@ for (const id of goldenWordIds) {
     if (!hasBopomofo(context.labelZhuyin) || !hasBopomofo(context.sentenceZhuyin) || !hasBopomofo(context.usageZhuyin)) {
       fail(`${id} context ${context.id} zhuyin fields must contain zhuyin`);
     }
+    validatePairArray(`${id} context ${context.id} labelZh`, context.labelZh, context.labelZhPairs);
+    validatePairArray(`${id} context ${context.id} sentenceZh`, context.sentenceZh, context.sentenceZhPairs);
+    validatePairArray(`${id} context ${context.id} usageZh`, context.usageZh, context.usageZhPairs);
     for (const field of requiredContextFields) {
       if (field === "sourceBasis") {
         if (!Array.isArray(context.sourceBasis) || context.sourceBasis.length < 1) {
           fail(`${id} context ${context.id} sourceBasis is required`);
         } else if (context.sourceBasis.some((item) => !isPresent(item) || hasForbiddenPlaceholder(item))) {
           fail(`${id} context ${context.id} sourceBasis contains invalid text`);
+        }
+      } else if (isPairField(field)) {
+        if (!Array.isArray(context[field]) || context[field].length < 1) {
+          fail(`${id} context ${context.id} ${field} is empty`);
         }
       } else if (!isPresent(context[field])) {
         fail(`${id} context ${context.id} ${field} is empty`);
