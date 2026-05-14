@@ -21,7 +21,7 @@ const SPEECH_SETTINGS = {
   pitch: 1.08,
   clipStartTimeoutMs: 900,
   speechStartDelayMs: 20,
-  speechRestartCheckMs: 350
+  androidSpeechThrottleMs: 800
 };
 
 const ENGLISH_VOICE_HINTS = [
@@ -47,6 +47,8 @@ const state = {
   activeAudio: null,
   speechVoices: [],
   speechToken: 0,
+  speechActive: false,
+  lastSpeechRequestAt: 0,
   words: [],
   wordById: new Map(),
   filteredWords: [],
@@ -443,6 +445,27 @@ function selectSpeechVoice(lang) {
   return voices.find((voice) => voice.lang.toLowerCase().startsWith(targetPrefix)) || null;
 }
 
+function isAndroidChrome() {
+  const ua = navigator.userAgent || "";
+  return ua.includes("Android") &&
+    ua.includes("Chrome") &&
+    !ua.includes("Edg") &&
+    !ua.includes("OPR") &&
+    !ua.includes("SamsungBrowser");
+}
+
+function canStartSpeechRequest() {
+  if (!isAndroidChrome()) {
+    return true;
+  }
+  const now = typeof performance === "object" && typeof performance.now === "function" ? performance.now() : Date.now();
+  if (now - state.lastSpeechRequestAt < SPEECH_SETTINGS.androidSpeechThrottleMs) {
+    return false;
+  }
+  state.lastSpeechRequestAt = now;
+  return true;
+}
+
 function primeSpeechEngine() {
   if (!window.speechSynthesis) {
     return;
@@ -453,7 +476,13 @@ function primeSpeechEngine() {
 
 function stopSpeechPlayback() {
   state.speechToken += 1;
+  state.speechActive = false;
   if (!window.speechSynthesis) {
+    return;
+  }
+  if (isAndroidChrome()) {
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
     return;
   }
   if (window.speechSynthesis.speaking || window.speechSynthesis.pending || window.speechSynthesis.paused) {
@@ -474,8 +503,11 @@ function initSpeechEngine() {
   window.addEventListener("touchstart", primeOnce, { once: true });
 }
 
-function speakText(text, lang, rate) {
+function speakText(text, lang, rate, options = {}) {
   if (!window.speechSynthesis || !text) {
+    return false;
+  }
+  if (!options.skipThrottle && !canStartSpeechRequest()) {
     return false;
   }
   stopActiveAudio();
@@ -498,25 +530,20 @@ function speakText(text, lang, rate) {
     if (voice) {
       utterance.voice = voice;
     }
+    utterance.onstart = () => {
+      if (speechToken === state.speechToken) {
+        state.speechActive = true;
+      }
+    };
+    const finishSpeech = () => {
+      if (speechToken === state.speechToken) {
+        state.speechActive = false;
+      }
+    };
+    utterance.onend = finishSpeech;
+    utterance.onerror = finishSpeech;
     window.speechSynthesis.resume();
     window.speechSynthesis.speak(utterance);
-    window.setTimeout(() => {
-      if (speechToken !== state.speechToken) {
-        return;
-      }
-      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
-        const retryUtterance = new SpeechSynthesisUtterance(speechText);
-        retryUtterance.lang = lang;
-        retryUtterance.rate = rate;
-        retryUtterance.pitch = SPEECH_SETTINGS.pitch;
-        retryUtterance.volume = SPEECH_SETTINGS.volume;
-        if (voice) {
-          retryUtterance.voice = voice;
-        }
-        window.speechSynthesis.resume();
-        window.speechSynthesis.speak(retryUtterance);
-      }
-    }, SPEECH_SETTINGS.speechRestartCheckMs);
   };
   window.setTimeout(speakNow, SPEECH_SETTINGS.speechStartDelayMs);
   return true;
@@ -541,8 +568,12 @@ function stopActiveAudio() {
   }
 }
 
-function playStaticAudio(path) {
+function playStaticAudio(path, options = {}) {
   return new Promise((resolve) => {
+    if (!options.skipThrottle && !canStartSpeechRequest()) {
+      resolve(false);
+      return;
+    }
     stopActiveAudio();
     stopSpeechPlayback();
     const audio = new Audio(path);
@@ -583,15 +614,18 @@ function playStaticAudio(path) {
 }
 
 async function speakClip(word, clipType, fallbackText, lang, rate) {
+  if (!canStartSpeechRequest()) {
+    return false;
+  }
   const clip = audioClipEntry(word, clipType);
   if (clip) {
-    const played = await playStaticAudio(clip.path);
+    const played = await playStaticAudio(clip.path, { skipThrottle: true });
     if (played) {
       return true;
     }
   }
   stopActiveAudio();
-  return speakText(fallbackText, lang, rate);
+  return speakText(fallbackText, lang, rate, { skipThrottle: true });
 }
 
 function speakEnglish(text) {
@@ -688,7 +722,9 @@ function renderExamQuestion() {
   elements.examHint.textContent = `意思：${state.activeExamWord.zh}（${state.activeExamWord.zhuyin}） · 主題：${state.activeExamWord.topicZh}（${state.activeExamWord.topicZhuyin}） · 來源：${state.activeExamWord.source}`;
   renderAnswerSlots();
   renderLetterBank();
-  window.setTimeout(() => speakWordAudio(state.activeExamWord), 180);
+  if (!isAndroidChrome()) {
+    window.setTimeout(() => speakWordAudio(state.activeExamWord), 180);
+  }
 }
 
 function renderAnswerSlots() {
