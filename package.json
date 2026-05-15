@@ -1,10 +1,24 @@
 {
   "scripts": {
     "deploy": "wrangler pages deploy site --project-name spell-quest-junior --branch main",
+    "build:official-review-queue": "py tools/build_official_review_queue.py",
+    "build:official-reviewed-draft": "node tools/build_official_reviewed_draft.js",
+    "generate:official-auto-candidates": "node tools/generate_official_auto_candidates.js --provider template --write-provider-requests",
+    "prepare:review-workbench": "node tools/prepare_review_workbench_data.js",
+    "validate:official-approved": "node tools/validate_official_reviewed_entries.js",
+    "validate:official-approved:postmerge": "node tools/validate_official_reviewed_entries.js --allow-site-collisions",
+    "import:review-approved": "node tools/import_review_workbench_approved.js",
+    "validate:official-review-queue": "py tools/validate_official_review_queue.py",
+    "validate:official-review-queue:postmerge": "py tools/validate_official_review_queue.py --allow-site-collisions",
+    "validate:official-reviewed-draft": "node tools/validate_official_reviewed_draft.js",
+    "validate:official-reviewed-draft:postmerge": "node tools/validate_official_reviewed_draft.js --allow-site-collisions",
+    "validate:official-auto-candidates": "node tools/validate_official_auto_candidates.js",
+    "validate:official-auto-candidates:postmerge": "node tools/validate_official_auto_candidates.js --allow-site-collisions",
     "sync:zhuyin-pairs": "node tools/sync_zhuyin_pairs.js",
     "validate:contexts": "node tools/validate_context_data.js"
   },
   "devDependencies": {
+    "pinyin-pro": "3.28.1",
     "wrangler": "4.88.0"
   }
 }

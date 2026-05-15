@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>官方單字審核工作台</title>
+    <link rel="stylesheet" href="./review.css">
+  </head>
+  <body>
+    <main class="review-shell">
+      <header class="review-header">
+        <div>
+          <a class="home-link" href="./">返回學習網站</a>
+          <h1>官方單字審核工作台</h1>
+          <p>把 machine_candidate 逐筆審核成 approved。資料只在本機瀏覽器暫存，匯出後再匯入正式 reviewed.json。</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" id="exportButton" class="primary-action" data-testid="export-approved">匯出 approved JSON</button>
+          <button type="button" id="copyButton" class="secondary-action" data-testid="copy-approved">複製 approved JSON</button>
+        </div>
+      </header>
+
+      <section class="summary-grid" aria-label="審核統計">
+        <article class="summary-card">
+          <span class="summary-number" id="totalCount">0</span>
+          <span class="summary-label">候選總數</span>
+        </article>
+        <article class="summary-card approved">
+          <span class="summary-number" id="approvedCount">0</span>
+          <span class="summary-label">已核准</span>
+        </article>
+        <article class="summary-card rejected">
+          <span class="summary-number" id="rejectedCount">0</span>
+          <span class="summary-label">退回</span>
+        </article>
+        <article class="summary-card pending">
+          <span class="summary-number" id="pendingCount">0</span>
+          <span class="summary-label">待審</span>
+        </article>
+      </section>
+
+      <section class="toolbar" aria-label="篩選工具">
+        <label>
+          字頭
+          <select id="letterFilter" data-testid="letter-filter"></select>
+        </label>
+        <label>
+          狀態
+          <select id="statusFilter" data-testid="status-filter">
+            <option value="pending">待審</option>
+            <option value="approved">已核准</option>
+            <option value="rejected">退回</option>
+            <option value="all">全部</option>
+          </select>
+        </label>
+        <label class="search-box">
+          搜尋
+          <input id="searchInput" type="search" placeholder="輸入單字或中文" data-testid="review-search">
+        </label>
+        <button type="button" id="clearLocalButton" class="danger-action" data-testid="clear-local">清除本機進度</button>
+      </section>
+
+      <p id="loadStatus" class="load-status" role="status">載入審核資料中...</p>
+      <p id="reviewTestResult" class="test-result" data-testid="review-test-result" hidden>NOT_RUN</p>
+
+      <section class="workbench-layout">
+        <aside class="candidate-sidebar" aria-label="候選清單">
+          <div class="sidebar-title">
+            <strong>候選清單</strong>
+            <span id="visibleCount">0</span>
+          </div>
+          <div id="candidateList" class="candidate-list" data-testid="candidate-list"></div>
+        </aside>
+
+        <section class="review-panel" aria-label="逐筆審核表單">
+          <div class="review-actions">
+            <button type="button" id="previousButton" class="secondary-action" data-testid="previous-record">上一筆</button>
+            <button type="button" id="approveButton" class="approve-action" data-testid="approve-record">核准這筆</button>
+            <button type="button" id="rejectButton" class="reject-action" data-testid="reject-record">退回這筆</button>
+            <button type="button" id="undoButton" class="secondary-action" data-testid="undo-record">改回待審</button>
+            <button type="button" id="nextButton" class="secondary-action" data-testid="next-record">下一筆</button>
+          </div>
+          <div id="recordPanel" class="record-panel" data-testid="record-panel"></div>
+          <div id="validationPanel" class="validation-panel" data-testid="validation-panel" aria-live="polite"></div>
+          <textarea id="exportPreview" class="export-preview" data-testid="export-preview" aria-label="approved JSON 預覽" readonly hidden></textarea>
+        </section>
+      </section>
+    </main>
+
+    <script src="./review.js"></script>
+  </body>
+</html>

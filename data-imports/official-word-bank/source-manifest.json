@@ -1,0 +1,156 @@
+{
+  "metadata": {
+    "kind": "official-word-bank-source-manifest",
+    "sourcePdf": "C:\\Users\\hch12\\Downloads\\英文單字\\單字庫.pdf",
+    "sourcePdfCopy": "source/單字庫.pdf",
+    "sourcePdfSha256": "1db6e5ab04f77a86fe83b99a13c9f076a74f2ae5dbb46dbe6952a01c8db4c9cf",
+    "createdAt": "2026-05-14T11:01:50+00:00",
+    "pdfType": "image-only"
+  },
+  "pages": [
+    {
+      "page": 1,
+      "imagePath": "extracted-pages/page-001.jpg",
+      "filter": "DCTDecode",
+      "width": 2127,
+      "height": 3331,
+      "sha256": "36e6770996d350aff2cfcb3c15ae0cd67bc7092881d6786f1857fa5f7ddf7a5b"
+    },
+    {
+      "page": 2,
+      "imagePath": "extracted-pages/page-002.jpg",
+      "filter": "DCTDecode",
+      "width": 1828,
+      "height": 2616,
+      "sha256": "7ecf7efafdedf28a785a4874d2104cb2dc660f6585298c0eb25de57be01bcc55"
+    },
+    {
+      "page": 3,
+      "imagePath": "extracted-pages/page-003.jpg",
+      "filter": "DCTDecode",
+      "width": 1815,
+      "height": 2721,
+      "sha256": "ff551eb027a834b27f0c4896b38b3e02d57420778640576895afe37179f21608"
+    },
+    {
+      "page": 4,
+      "imagePath": "extracted-pages/page-004.jpg",
+      "filter": "DCTDecode",
+      "width": 1819,
+      "height": 2815,
+      "sha256": "3a5c24ea40553247ef52256443fd91a74bcc3021f5e8b7d476c8bce90034d5f5"
+    },
+    {
+      "page": 5,
+      "imagePath": "extracted-pages/page-005.jpg",
+      "filter": "DCTDecode",
+      "width": 1821,
+      "height": 2754,
+      "sha256": "211f2b3a7ad0cc07bc4720d405040a1b5fbec7c68bf71ea8b76dcc39f575cf26"
+    },
+    {
+      "page": 6,
+      "imagePath": "extracted-pages/page-006.jpg",
+      "filter": "DCTDecode",
+      "width": 1888,
+      "height": 2599,
+      "sha256": "d89836e15f821087ff4fff58968011c8b8a383432214b9ff5ad3e858baf7f70b"
+    },
+    {
+      "page": 7,
+      "imagePath": "extracted-pages/page-007.jpg",
+      "filter": "DCTDecode",
+      "width": 1819,
+      "height": 2729,
+      "sha256": "31b3820c2fe93a6fa80b8df70080dcc772ecc499a49740645ff4d1e65542f44c"
+    },
+    {
+      "page": 8,
+      "imagePath": "extracted-pages/page-008.jpg",
+      "filter": "DCTDecode",
+      "width": 1894,
+      "height": 2754,
+      "sha256": "65e91f2a4a740dffeec4e9075ebf89d754393649e568fd16fc17283844dc83e8"
+    },
+    {
+      "page": 9,
+      "imagePath": "extracted-pages/page-009.jpg",
+      "filter": "DCTDecode",
+      "width": 1811,
+      "height": 2662,
+      "sha256": "b6756779d270eb6c8a6d690f26630b95a707d6121f240513d679f09e83b70830"
+    },
+    {
+      "page": 10,
+      "imagePath": "extracted-pages/page-010.jpg",
+      "filter": "DCTDecode",
+      "width": 1708,
+      "height": 2507,
+      "sha256": "d72be183fe78228080540201507eb939809bc4b057dc47193cd082045bd74f3d"
+    },
+    {
+      "page": 11,
+      "imagePath": "extracted-pages/page-011.jpg",
+      "filter": "DCTDecode",
+      "width": 1783,
+      "height": 2640,
+      "sha256": "08294535728b6102bf8976bb4d69a4103902b557a3a03b1153177fc95c1f8771"
+    },
+    {
+      "page": 12,
+      "imagePath": "extracted-pages/page-012.jpg",
+      "filter": "DCTDecode",
+      "width": 1877,
+      "height": 2944,
+      "sha256": "2f0101f6d6b2cb33dae26c4eeee3f3129b5b563e695b48db9ee143f7f326358f"
+    },
+    {
+      "page": 13,
+      "imagePath": "extracted-pages/page-013.jpg",
+      "filter": "DCTDecode",
+      "width": 1797,
+      "height": 2797,
+      "sha256": "a6a4e1fb11380f5c384286dbb406a5b97f8ae81a7e9e6208b652942d83eb2ac6"
+    },
+    {
+      "page": 14,
+      "imagePath": "extracted-pages/page-014.jpg",
+      "filter": "DCTDecode",
+      "width": 1709,
+      "height": 2601,
+      "sha256": "d4130c2174595538403b8f162b880d3055b075fa5c7647e33744a0ae8c05b809"
+    },
+    {
+      "page": 15,
+      "imagePath": "extracted-pages/page-015.jpg",
+      "filter": "DCTDecode",
+      "width": 1817,
+      "height": 2623,
+      "sha256": "05d97bd4a27a68d5d53b2b78d646d8c1a7b27c7faabab1aee4a0609e6a3ada43"
+    },
+    {
+      "page": 16,
+      "imagePath": "extracted-pages/page-016.jpg",
+      "filter": "DCTDecode",
+      "width": 1916,
+      "height": 3013,
+      "sha256": "b839d5d353a20b0bdd42ac4f7797e9ecfa805333c277290dea5da57f31bd0f69"
+    },
+    {
+      "page": 17,
+      "imagePath": "extracted-pages/page-017.jpg",
+      "filter": "DCTDecode",
+      "width": 1835,
+      "height": 2803,
+      "sha256": "753450ec9fea0eaa3d3d9daf6991c1feb7cdb074eaf06d3c7c368e5773b688ed"
+    },
+    {
+      "page": 18,
+      "imagePath": "extracted-pages/page-018.jpg",
+      "filter": "DCTDecode",
+      "width": 1975,
+      "height": 2929,
+      "sha256": "5583f247e72da33a161c2ae79f153b1d1d76fa2fb3ab23504bc0050ecc4a06a0"
+    }
+  ]
+}

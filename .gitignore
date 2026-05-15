@@ -4,4 +4,11 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
-
+data-imports/official-word-bank/source/
+data-imports/official-word-bank/extracted-pages/
+data-imports/official-word-bank/*.preview.json
+data-imports/official-word-bank/*.jpg
+data-imports/official-word-bank/official-word-bank.reviewed.from-workbench.json
+data-imports/official-word-bank/recovered-review-progress.json
+site/data/*.before-official-merge.json
+site/data/review/*.json
