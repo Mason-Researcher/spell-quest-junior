@@ -26,6 +26,7 @@ const SPEECH_SETTINGS = {
   speechStartDelayMs: 20,
   androidSpeechThrottleMs: 800
 };
+const AUDIO_PRELOAD_LIMIT = 24;
 
 const ENGLISH_VOICE_HINTS = [
   "microsoft jenny",
@@ -48,6 +49,7 @@ const state = {
   manifest: null,
   audioManifest: null,
   activeAudio: null,
+  preloadedAudio: new Map(),
   speechVoices: [],
   speechToken: 0,
   speechActive: false,
@@ -1010,6 +1012,7 @@ function renderPracticeCard() {
   renderPracticeContext(word);
   renderPracticeLetters(word.word);
   updateKnownButton(word);
+  preloadPracticeAudio(word);
 }
 
 function renderPracticeLetters(wordText) {
@@ -1201,6 +1204,80 @@ function audioClipEntry(word, clipType) {
   return wordClips[clipType];
 }
 
+function rememberPreloadedAudio(path, audio) {
+  if (state.preloadedAudio.has(path)) {
+    return;
+  }
+  state.preloadedAudio.set(path, audio);
+  while (state.preloadedAudio.size > AUDIO_PRELOAD_LIMIT) {
+    const oldestKey = state.preloadedAudio.keys().next().value;
+    const oldestAudio = state.preloadedAudio.get(oldestKey);
+    if (oldestAudio) {
+      oldestAudio.pause();
+      oldestAudio.removeAttribute("src");
+    }
+    state.preloadedAudio.delete(oldestKey);
+  }
+}
+
+function preloadStaticAudio(path) {
+  if (!path || state.preloadedAudio.has(path)) {
+    return;
+  }
+  try {
+    const audio = new Audio(path);
+    audio.preload = "auto";
+    audio.volume = SPEECH_SETTINGS.volume;
+    audio.load();
+    rememberPreloadedAudio(path, audio);
+  } catch (error) {
+    console.warn(`Audio preload skipped: ${path}`);
+  }
+}
+
+function preloadAudioClip(word, clipType) {
+  const clip = audioClipEntry(word, clipType);
+  if (clip && clip.path) {
+    preloadStaticAudio(clip.path);
+  }
+}
+
+function expectedAudioClipTypes(word) {
+  if (!word) {
+    return [];
+  }
+  const clipTypes = ["word", "example", "meaningZh", "topicZh", "exampleZh", "examHintZh"];
+  const contexts = approvedContexts(word);
+  if (contexts.length > 0) {
+    contexts.forEach((context) => {
+      clipTypes.push(contextAudioClipType(context, "en"));
+      clipTypes.push(contextAudioClipType(context, "zh"));
+    });
+  } else {
+    clipTypes.push("usage");
+    clipTypes.push("usageZh");
+  }
+  return clipTypes;
+}
+
+function preloadPracticeAudio(word) {
+  expectedAudioClipTypes(word).forEach((clipType) => preloadAudioClip(word, clipType));
+}
+
+function preloadExamAudio(word) {
+  preloadAudioClip(word, "word");
+  preloadAudioClip(word, "examHintZh");
+}
+
+function createStaticAudio(path) {
+  const preloadedAudio = state.preloadedAudio.get(path);
+  if (preloadedAudio) {
+    state.preloadedAudio.delete(path);
+    return preloadedAudio;
+  }
+  return new Audio(path);
+}
+
 function stopActiveAudio() {
   if (state.activeAudio) {
     state.activeAudio.pause();
@@ -1217,7 +1294,7 @@ function playStaticAudio(path, options = {}) {
     }
     stopActiveAudio();
     stopSpeechPlayback();
-    const audio = new Audio(path);
+    const audio = createStaticAudio(path);
     state.activeAudio = audio;
     audio.preload = "auto";
     audio.volume = SPEECH_SETTINGS.volume;
@@ -1376,6 +1453,7 @@ function renderExamQuestion() {
   renderExamHint(state.activeExamWord);
   renderAnswerSlots();
   renderLetterBank();
+  preloadExamAudio(state.activeExamWord);
   if (!isAndroidChrome()) {
     window.setTimeout(() => speakWordAudio(state.activeExamWord), 180);
   }
@@ -1979,6 +2057,46 @@ function maybeRunBpmfCoverageTest() {
   }, 1000);
 }
 
+function maybeRunAudioPipelineTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("audiotest") !== "1") {
+    return;
+  }
+  window.setTimeout(async () => {
+    const marker = document.createElement("div");
+    marker.id = "audioPipelineTestResult";
+    try {
+      let requiredClips = 0;
+      let clipsWithAudio = 0;
+      state.words.forEach((word) => {
+        expectedAudioClipTypes(word).forEach((clipType) => {
+          requiredClips += 1;
+          if (audioClipEntry(word, clipType)) {
+            clipsWithAudio += 1;
+          }
+        });
+      });
+      const sampleWord = state.words.find((word) => audioClipEntry(word, "word"));
+      let sampleAudioOk = false;
+      if (sampleWord) {
+        const sampleClip = audioClipEntry(sampleWord, "word");
+        const response = await fetch(sampleClip.path, { cache: "no-store" });
+        const blob = await response.blob();
+        sampleAudioOk = response.ok && blob.size > 500;
+      }
+      marker.dataset.words = String(state.words.length);
+      marker.dataset.requiredClips = String(requiredClips);
+      marker.dataset.clipsWithAudio = String(clipsWithAudio);
+      marker.dataset.sampleAudioOk = String(sampleAudioOk);
+      marker.textContent = clipsWithAudio === requiredClips && sampleAudioOk ? "PASS" : "FAIL";
+    } catch (error) {
+      marker.textContent = "FAIL";
+      marker.dataset.error = String(error && error.message ? error.message : error);
+    }
+    document.body.appendChild(marker);
+  }, 1000);
+}
+
 function maybeRunSelfTest() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("selftest") !== "1") {
@@ -2111,6 +2229,7 @@ async function init() {
     maybeRunToolbarMatrixTest();
     maybeRunInteractionTest();
     maybeRunBpmfCoverageTest();
+    maybeRunAudioPipelineTest();
   } catch (error) {
     renderEmptyPractice();
     elements.exampleText.textContent = "Data failed to load. Please run the site through a local server or GitHub Pages.";
