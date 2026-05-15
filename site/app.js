@@ -55,6 +55,7 @@ const state = {
   words: [],
   wordById: new Map(),
   filteredWords: [],
+  filterSignature: "",
   currentIndex: 0,
   activeContextIndex: 0,
   knownWords: new Set(),
@@ -78,6 +79,8 @@ const elements = {
   levelFilter: document.getElementById("levelFilter"),
   topicFilter: document.getElementById("topicFilter"),
   shuffleButton: document.getElementById("shuffleButton"),
+  clearFiltersButton: document.getElementById("clearFiltersButton"),
+  filterStatus: document.getElementById("filterStatus"),
   wordSource: document.getElementById("wordSource"),
   wordLevel: document.getElementById("wordLevel"),
   wordStar: document.getElementById("wordStar"),
@@ -167,6 +170,20 @@ const LABEL_PAIRS = {
     { text: "的", bpmf: "ㄉㄜ˙" },
     { text: "單", bpmf: "ㄉㄢ" },
     { text: "字", bpmf: "ㄗˋ" }
+  ],
+  matching: [
+    { text: "符", bpmf: "ㄈㄨˊ" },
+    { text: "合", bpmf: "ㄏㄜˊ" }
+  ],
+  wordsUnit: [
+    { text: "個", bpmf: "ㄍㄜˋ" },
+    { text: "單", bpmf: "ㄉㄢ" },
+    { text: "字", bpmf: "ㄗˋ" }
+  ],
+  filterActive: [
+    { text: "篩", bpmf: "ㄕㄞ" },
+    { text: "選", bpmf: "ㄒㄩㄢˇ" },
+    { text: "中", bpmf: "ㄓㄨㄥ" }
   ],
   noExamItems: [
     { text: "沒", bpmf: "ㄇㄟˊ" },
@@ -265,6 +282,13 @@ function isBopomofoCharacter(value) {
   return BOPOMOFO_SYMBOLS.includes(value) || ZHUYIN_TONE_MARKS.includes(value);
 }
 
+function isPlainZhuyinText(text, bpmf) {
+  if (bpmf) {
+    return false;
+  }
+  return !Array.from(String(text || "")).some((character) => isCjkCharacter(character) || isBopomofoCharacter(character));
+}
+
 function cleanBpmfToken(value) {
   let output = "";
   Array.from(String(value || "")).forEach((character) => {
@@ -296,8 +320,31 @@ function splitBpmfTokens(value) {
   return tokens;
 }
 
+function splitBpmfTokensStrict(value) {
+  const tokens = [];
+  let current = "";
+  Array.from(String(value || "")).forEach((character) => {
+    if (isBopomofoCharacter(character)) {
+      current += character;
+      return;
+    }
+    if (current) {
+      const cleaned = cleanBpmfToken(current);
+      if (cleaned) {
+        tokens.push(cleaned);
+      }
+      current = "";
+    }
+  });
+  const cleaned = cleanBpmfToken(current);
+  if (cleaned) {
+    tokens.push(cleaned);
+  }
+  return tokens;
+}
+
 function pairsFromTextAndZhuyin(text, zhuyin) {
-  const tokens = splitBpmfTokens(zhuyin);
+  const tokens = splitBpmfTokensStrict(zhuyin);
   let tokenIndex = 0;
   return Array.from(String(text || "")).map((character) => {
     if (!isCjkCharacter(character)) {
@@ -346,9 +393,16 @@ function createZhuyinPhrase(pairs, extraClass = "") {
   phrase.dataset.bpmfText = phraseText;
   phrase.setAttribute("aria-label", phraseText);
   pairs.forEach((pair) => {
-    const unit = document.createElement("span");
     const text = String(pair.text || "");
     const bpmf = String(pair.bpmf || "");
+    if (isPlainZhuyinText(text, bpmf)) {
+      const plain = document.createElement("span");
+      plain.className = "bpmf-plain";
+      plain.textContent = text;
+      phrase.appendChild(plain);
+      return;
+    }
+    const unit = document.createElement("span");
     unit.className = bpmf ? "bpmf-unit" : "bpmf-unit no-bpmf";
     const han = document.createElement("span");
     han.className = "bpmf-han";
@@ -711,11 +765,47 @@ function hasActiveWordFilter() {
   return needle.length > 0 || level !== "all" || topic !== "all" || initial !== "all";
 }
 
-function filterWords() {
+function currentFilterSignature() {
   const needle = normalizeText(elements.searchInput.value);
   const level = elements.levelFilter.value;
   const topic = elements.topicFilter.value;
   const initial = elements.initialFilter ? elements.initialFilter.value : "all";
+  return [needle, initial, level, topic].join("|");
+}
+
+function isExamModeActive() {
+  return elements.examView.classList.contains("active");
+}
+
+function renderFilterStatus() {
+  if (!elements.filterStatus) {
+    return;
+  }
+  elements.filterStatus.innerHTML = "";
+  if (state.filteredWords.length === 0) {
+    appendBpmfPairs(elements.filterStatus, LABEL_PAIRS.noMatchingWords);
+    return;
+  }
+  appendBpmfPairs(elements.filterStatus, LABEL_PAIRS.matching);
+  appendPlain(elements.filterStatus, ` ${state.filteredWords.length} / ${state.words.length} `);
+  appendBpmfPairs(elements.filterStatus, LABEL_PAIRS.wordsUnit);
+  if (hasActiveWordFilter()) {
+    appendPlain(elements.filterStatus, " · ");
+    appendBpmfPairs(elements.filterStatus, LABEL_PAIRS.filterActive);
+  }
+}
+
+function filterWords(options = {}) {
+  const signature = currentFilterSignature();
+  const filterChanged = signature !== state.filterSignature;
+  state.filterSignature = signature;
+  const needle = normalizeText(elements.searchInput.value);
+  const level = elements.levelFilter.value;
+  const topic = elements.topicFilter.value;
+  const initial = elements.initialFilter ? elements.initialFilter.value : "all";
+  if (filterChanged || options.resetIndex) {
+    state.currentIndex = 0;
+  }
   state.filteredWords = state.words.filter((word) => {
     const levelOk = level === "all" || word.level === level;
     const topicOk = topic === "all" || word.topic === topic;
@@ -731,6 +821,8 @@ function filterWords() {
   if (state.filteredWords.length === 0) {
     state.currentIndex = 0;
     renderEmptyPractice();
+    updateStats();
+    renderFilterStatus();
     return;
   }
   if (state.currentIndex >= state.filteredWords.length) {
@@ -738,6 +830,43 @@ function filterWords() {
   }
   renderPracticeCard();
   updateStats();
+  renderFilterStatus();
+  if (filterChanged && isExamModeActive() && !options.skipExamRefresh) {
+    startExam();
+  }
+}
+
+function clearFilters() {
+  elements.searchInput.value = "";
+  if (elements.initialFilter) {
+    elements.initialFilter.value = "all";
+  }
+  elements.levelFilter.value = "all";
+  elements.topicFilter.value = "all";
+  filterWords({ resetIndex: true });
+}
+
+function shuffleFilteredWords() {
+  if (state.filteredWords.length <= 1) {
+    renderFilterStatus();
+    return;
+  }
+  const before = currentPracticeWord();
+  let shuffled = state.filteredWords;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    shuffled = shuffleArray(state.filteredWords);
+    if (!before || shuffled[0].id !== before.id) {
+      break;
+    }
+  }
+  state.filteredWords = shuffled;
+  state.currentIndex = 0;
+  renderPracticeCard();
+  updateStats();
+  renderFilterStatus();
+  if (isExamModeActive()) {
+    startExam();
+  }
 }
 
 function updateStats() {
@@ -1434,8 +1563,14 @@ function maybeRunZhuyinLayoutTest() {
       if (markRect.width > hanRect.width * 0.72) {
         issues.push(`wide-mark-${index}-${han.textContent}-${markRect.width.toFixed(1)}-${hanRect.width.toFixed(1)}`);
       }
-      if (markRect.height > hanRect.height * 1.2) {
+      if (markRect.height > hanRect.height + 0.5) {
         issues.push(`tall-mark-${index}-${han.textContent}-${markRect.height.toFixed(1)}-${hanRect.height.toFixed(1)}`);
+      }
+    });
+    Array.from(document.querySelectorAll(".bpmf-plain")).forEach((plain, index) => {
+      const text = plain.textContent || "";
+      if (containsCjkText(text) || Array.from(text).some((character) => isBopomofoCharacter(character))) {
+        issues.push(`plain-contains-reading-text-${index}-${text}`);
       }
     });
     const marker = document.createElement("div");
@@ -1473,6 +1608,328 @@ function maybeRunInitialFilterTest() {
     marker.textContent = practiceOk && examOk && resetOk ? "PASS" : "FAIL";
     document.body.appendChild(marker);
   }, 900);
+}
+
+function dispatchToolbarEvent(element, type) {
+  element.dispatchEvent(new Event(type, { bubbles: true }));
+}
+
+function setToolbarFilters({ search = "", initial = "all", level = "all", topic = "all" }, options = {}) {
+  elements.searchInput.value = search;
+  if (elements.initialFilter) {
+    elements.initialFilter.value = initial;
+  }
+  elements.levelFilter.value = level;
+  elements.topicFilter.value = topic;
+  if (options.useEvents) {
+    dispatchToolbarEvent(elements.searchInput, "input");
+    if (elements.initialFilter) {
+      dispatchToolbarEvent(elements.initialFilter, "change");
+    }
+    dispatchToolbarEvent(elements.levelFilter, "change");
+    dispatchToolbarEvent(elements.topicFilter, "change");
+    return;
+  }
+  filterWords({ resetIndex: true, skipExamRefresh: true });
+}
+
+function addToolbarTestMarker(results) {
+  const marker = document.createElement("div");
+  marker.id = "toolbarControlTestResult";
+  marker.dataset.results = JSON.stringify(results);
+  marker.textContent = results.every((item) => item.pass) ? "PASS" : "FAIL";
+  document.body.appendChild(marker);
+}
+
+function maybeRunToolbarControlTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("controltest") !== "1") {
+    return;
+  }
+  window.setTimeout(() => {
+    const results = [];
+    setMode("practice");
+    clearFilters();
+    setToolbarFilters({ search: "dodge" }, { useEvents: true });
+    results.push({
+      name: "search",
+      pass: currentPracticeWord() && currentPracticeWord().word === "dodge",
+      count: state.filteredWords.length
+    });
+    setToolbarFilters({ initial: "A" }, { useEvents: true });
+    results.push({
+      name: "initial",
+      pass: state.filteredWords.length > 0 && state.filteredWords.every((word) => wordInitial(word) === "A"),
+      count: state.filteredWords.length
+    });
+    setToolbarFilters({ level: "challenge" }, { useEvents: true });
+    results.push({
+      name: "level",
+      pass: state.filteredWords.length > 0 && state.filteredWords.every((word) => word.level === "challenge"),
+      count: state.filteredWords.length
+    });
+    setToolbarFilters({ topic: "school" }, { useEvents: true });
+    results.push({
+      name: "topic",
+      pass: state.filteredWords.length > 0 && state.filteredWords.every((word) => word.topic === "school"),
+      count: state.filteredWords.length
+    });
+    clearFilters();
+    const beforeShuffle = currentPracticeWord() ? currentPracticeWord().id : "";
+    shuffleFilteredWords();
+    const afterShuffle = currentPracticeWord() ? currentPracticeWord().id : "";
+    results.push({
+      name: "shuffle",
+      pass: beforeShuffle !== afterShuffle && state.filteredWords.length === state.words.length,
+      count: state.filteredWords.length
+    });
+    setToolbarFilters({ search: "dodge", initial: "A" }, { useEvents: true });
+    const conflictCount = state.filteredWords.length;
+    clearFilters();
+    results.push({
+      name: "clear",
+      pass: conflictCount === 0 && state.filteredWords.length === state.words.length && !hasActiveWordFilter(),
+      count: state.filteredWords.length
+    });
+    addToolbarTestMarker(results);
+  }, 1100);
+}
+
+function toolbarExpectedWords(criteria) {
+  const search = normalizeText(criteria.search || "");
+  const initial = criteria.initial || "all";
+  const level = criteria.level || "all";
+  const topic = criteria.topic || "all";
+  return state.words.filter((word) => {
+    const searchableText = normalizeText([word.word, word.zh, word.topicZh, word.source].join(" "));
+    return (!search || searchableText.includes(search)) &&
+      (initial === "all" || wordInitial(word) === initial) &&
+      (level === "all" || word.level === level) &&
+      (topic === "all" || word.topic === topic);
+  });
+}
+
+function toolbarOptionValues(element) {
+  return Array.from(element.options).map((option) => option.value);
+}
+
+function toolbarMatrixCases() {
+  const searches = ["", "dodge", "milk", "daily", "zzzz-not-found"];
+  const initials = elements.initialFilter ? toolbarOptionValues(elements.initialFilter) : ["all"];
+  const levels = toolbarOptionValues(elements.levelFilter);
+  const topics = toolbarOptionValues(elements.topicFilter);
+  const cases = [];
+  searches.forEach((search) => {
+    initials.forEach((initial) => {
+      levels.forEach((level) => {
+        topics.forEach((topic) => {
+          cases.push({ search, initial, level, topic });
+        });
+      });
+    });
+  });
+  return cases;
+}
+
+function runToolbarMatrixCase(criteria) {
+  setToolbarFilters(criteria);
+  const expected = toolbarExpectedWords(criteria);
+  const actual = state.filteredWords;
+  const firstExpected = expected.length > 0 ? expected[0].word : "No words";
+  const statusText = elements.filterStatus ? elements.filterStatus.textContent.trim() : "";
+  const sameLength = actual.length === expected.length;
+  const sameFirst = (currentPracticeWord() ? currentPracticeWord().word : "No words") === firstExpected &&
+    elements.wordText.textContent === firstExpected;
+  const sourceOk = expected.length === 0 || elements.wordSource.textContent === expected[0].source;
+  const levelOk = expected.length === 0 || elements.wordLevel.textContent === expected[0].level;
+  const statusOk = statusText.length > 0;
+  return {
+    pass: sameLength && sameFirst && sourceOk && levelOk && statusOk && state.currentIndex === 0,
+    sameLength,
+    sameFirst,
+    sourceOk,
+    levelOk,
+    statusOk,
+    currentIndexOk: state.currentIndex === 0,
+    expectedCount: expected.length,
+    actualCount: actual.length,
+    expectedFirst: firstExpected,
+    actualFirst: elements.wordText.textContent,
+    statusLength: statusText.length,
+    criteria
+  };
+}
+
+function addToolbarMatrixMarker(summary) {
+  const marker = document.createElement("div");
+  marker.id = "toolbarMatrixTestResult";
+  marker.dataset.totalCases = String(summary.totalCases);
+  marker.dataset.failureCount = String(summary.failures.length);
+  marker.dataset.failures = JSON.stringify(summary.failures.slice(0, 25));
+  marker.textContent = summary.failures.length === 0 ? "PASS" : "FAIL";
+  document.body.appendChild(marker);
+}
+
+function maybeRunToolbarMatrixTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("matrixtest") !== "1") {
+    return;
+  }
+  window.setTimeout(() => {
+    setMode("practice");
+    clearFilters();
+    const failures = [];
+    const cases = toolbarMatrixCases();
+    cases.forEach((criteria, index) => {
+      const result = runToolbarMatrixCase(criteria);
+      if (!result.pass) {
+        failures.push({ index, ...result });
+      }
+    });
+    clearFilters();
+    addToolbarMatrixMarker({ totalCases: cases.length, failures });
+  }, 1250);
+}
+
+function addInteractionTestMarker(results) {
+  const marker = document.createElement("div");
+  marker.id = "interactionTestResult";
+  marker.dataset.results = JSON.stringify(results);
+  marker.textContent = results.every((item) => item.pass) ? "PASS" : "FAIL";
+  document.body.appendChild(marker);
+}
+
+function recordInteractionResult(results, name, pass, extra = {}) {
+  results.push({ name, pass: Boolean(pass), ...extra });
+}
+
+function clickElementForTest(element) {
+  if (!element) {
+    return false;
+  }
+  element.click();
+  return true;
+}
+
+function maybeRunInteractionTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("interactiontest") !== "1") {
+    return;
+  }
+  window.setTimeout(() => {
+    const results = [];
+    setMode("practice");
+    clearFilters();
+
+    const firstWord = currentPracticeWord();
+    movePractice(1);
+    const nextWord = currentPracticeWord();
+    movePractice(-1);
+    const restoredWord = currentPracticeWord();
+    recordInteractionResult(
+      results,
+      "practice-navigation",
+      firstWord && nextWord && restoredWord && firstWord.id !== nextWord.id && restoredWord.id === firstWord.id,
+      { first: firstWord ? firstWord.word : "", next: nextWord ? nextWord.word : "" }
+    );
+
+    const knownBefore = state.knownWords.size;
+    clickElementForTest(elements.knownButton);
+    const knownAfterToggle = state.knownWords.size;
+    clickElementForTest(elements.knownButton);
+    const knownAfterRestore = state.knownWords.size;
+    recordInteractionResult(
+      results,
+      "known-toggle",
+      knownBefore !== knownAfterToggle && knownAfterRestore === knownBefore,
+      { before: knownBefore, afterToggle: knownAfterToggle, afterRestore: knownAfterRestore }
+    );
+
+    const contextButtons = elements.contextTabs ? Array.from(elements.contextTabs.querySelectorAll(".context-tab")) : [];
+    const contextTexts = [];
+    contextButtons.forEach((button) => {
+      clickElementForTest(button);
+      contextTexts.push(elements.usageText.textContent);
+    });
+    recordInteractionResult(
+      results,
+      "context-tabs",
+      contextButtons.length >= 3 && new Set(contextTexts).size === contextButtons.length,
+      { tabs: contextButtons.length }
+    );
+
+    const audioOptions = Array.from(elements.audioSelect.options).map((option) => option.value);
+    const audioSources = [];
+    audioOptions.forEach((value) => {
+      elements.audioSelect.value = value;
+      dispatchToolbarEvent(elements.audioSelect, "change");
+      audioSources.push(elements.sourceAudio.getAttribute("src"));
+    });
+    recordInteractionResult(
+      results,
+      "source-audio-select",
+      audioSources.length >= 2 && new Set(audioSources).size === audioSources.length,
+      { sources: audioSources.length }
+    );
+
+    [
+      elements.speakButton,
+      elements.speakMeaningZh,
+      elements.speakTopicZh,
+      elements.speakExampleEn,
+      elements.speakExampleZh,
+      elements.speakUsageEn,
+      elements.speakUsageZh
+    ].forEach((button) => clickElementForTest(button));
+    stopActiveAudio();
+    stopSpeechPlayback();
+    recordInteractionResult(results, "practice-speech-buttons", true);
+
+    setToolbarFilters({ initial: "A" });
+    setMode("exam");
+    startExam();
+    recordInteractionResult(
+      results,
+      "filtered-exam-source",
+      state.examWords.length > 0 && state.examWords.every((word) => wordInitial(word) === "A"),
+      { examWords: state.examWords.length }
+    );
+
+    const letterButtons = Array.from(elements.letterBank.querySelectorAll(".letter-tile"));
+    const firstLetterClicked = clickElementForTest(letterButtons[0]);
+    const selectedAfterPick = state.selectedLetters.length;
+    clickElementForTest(elements.eraseButton);
+    const selectedAfterErase = state.selectedLetters.length;
+    recordInteractionResult(
+      results,
+      "exam-pick-erase",
+      firstLetterClicked && selectedAfterPick === 1 && selectedAfterErase === 0,
+      { letters: letterButtons.length }
+    );
+
+    const filled = fillCorrectExamAnswerForSelfTest();
+    const checked = checkAnswer();
+    const feedbackOk = elements.examFeedback.classList.contains("good");
+    const examIndexBeforeNext = state.examIndex;
+    clickElementForTest(elements.nextExamButton);
+    const nextExamOk = state.examWords.length <= 1 || state.examIndex !== examIndexBeforeNext;
+    recordInteractionResult(
+      results,
+      "exam-check-next",
+      filled && checked && feedbackOk && nextExamOk,
+      { filled, checked, feedbackOk, nextExamOk, examIndexBeforeNext, examIndexAfterNext: state.examIndex }
+    );
+
+    clickElementForTest(elements.playExamWord);
+    clickElementForTest(elements.playExamHintZh);
+    stopActiveAudio();
+    stopSpeechPlayback();
+    recordInteractionResult(results, "exam-speech-buttons", true);
+
+    clearFilters();
+    setMode("practice");
+    addInteractionTestMarker(results);
+  }, 1350);
 }
 
 function textNodeIsCoveredByBpmf(node) {
@@ -1548,11 +2005,8 @@ function bindEvents() {
   elements.initialFilter.addEventListener("change", filterWords);
   elements.levelFilter.addEventListener("change", filterWords);
   elements.topicFilter.addEventListener("change", filterWords);
-  elements.shuffleButton.addEventListener("click", () => {
-    state.filteredWords = shuffleArray(state.filteredWords);
-    state.currentIndex = 0;
-    renderPracticeCard();
-  });
+  elements.shuffleButton.addEventListener("click", shuffleFilteredWords);
+  elements.clearFiltersButton.addEventListener("click", clearFilters);
   elements.prevButton.addEventListener("click", () => movePractice(-1));
   elements.nextButton.addEventListener("click", () => movePractice(1));
   elements.speakButton.addEventListener("click", () => {
@@ -1643,14 +2097,19 @@ async function init() {
     state.filteredWords = state.words.slice();
     buildInitialFilter();
     buildTopicFilter();
+    state.filterSignature = currentFilterSignature();
     updateStats();
     renderPracticeCard();
+    renderFilterStatus();
     if (window.location.hash === "#exam") {
       setMode("exam");
     }
     maybeRunSelfTest();
     maybeRunZhuyinLayoutTest();
     maybeRunInitialFilterTest();
+    maybeRunToolbarControlTest();
+    maybeRunToolbarMatrixTest();
+    maybeRunInteractionTest();
     maybeRunBpmfCoverageTest();
   } catch (error) {
     renderEmptyPractice();
