@@ -16,6 +16,7 @@ const REQUIRED_WORD_FIELDS = [
 
 const ALLOWED_LEVELS = ["starter", "bridge", "challenge"];
 const FIRST_LETTERS = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+const EXAM_DIFFICULTIES = ["low", "medium", "high"];
 const ZHUYIN_TONE_MARKS = ["ˊ", "ˇ", "ˋ", "˙"];
 const BOPOMOFO_SYMBOLS = Array.from("ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ");
 
@@ -64,6 +65,7 @@ const state = {
   examWords: [],
   examIndex: 0,
   examScore: 0,
+  examDifficulty: "low",
   selectedLetters: [],
   activeExamWord: null,
   questionPacks: []
@@ -115,6 +117,7 @@ const elements = {
   sourceAudio: document.getElementById("sourceAudio"),
   examScore: document.getElementById("examScore"),
   examTotal: document.getElementById("examTotal"),
+  examDifficultyButtons: Array.from(document.querySelectorAll("[data-exam-difficulty]")),
   playExamWord: document.getElementById("playExamWord"),
   playExamHintZh: document.getElementById("playExamHintZh"),
   newExamButton: document.getElementById("newExamButton"),
@@ -737,6 +740,145 @@ function buildTopicFilter() {
     option.textContent = item.topic;
     elements.topicFilter.appendChild(option);
   });
+}
+
+function isInputExamDifficulty() {
+  return state.examDifficulty === "medium" || state.examDifficulty === "high";
+}
+
+function updateExamDifficultyButtons() {
+  elements.examDifficultyButtons.forEach((button) => {
+    const active = button.dataset.examDifficulty === state.examDifficulty;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+}
+
+function examLockedIndexes(word) {
+  const locked = new Set();
+  if (state.examDifficulty === "medium" && word && word.word.length > 1) {
+    locked.add(0);
+    locked.add(word.word.length - 1);
+  }
+  return locked;
+}
+
+function initialExamLetters(word) {
+  if (!isInputExamDifficulty() || !word) {
+    return [];
+  }
+  const locked = examLockedIndexes(word);
+  return word.word.split("").map((letter, index) => locked.has(index) ? letter : "");
+}
+
+function resetExamAnswerState() {
+  if (!state.activeExamWord) {
+    return;
+  }
+  state.selectedLetters = initialExamLetters(state.activeExamWord);
+  elements.examFeedback.textContent = "";
+  elements.examFeedback.className = "feedback";
+  renderAnswerSlots();
+  renderLetterBank();
+}
+
+function setExamDifficulty(difficulty) {
+  if (!EXAM_DIFFICULTIES.includes(difficulty)) {
+    return;
+  }
+  state.examDifficulty = difficulty;
+  updateExamDifficultyButtons();
+  resetExamAnswerState();
+}
+
+function getExamAnswer() {
+  return state.selectedLetters.join("");
+}
+
+function isAsciiLetter(character) {
+  const code = String(character || "").charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function normalizeExamLetter(value) {
+  for (const character of String(value || "")) {
+    if (isAsciiLetter(character)) {
+      return character.toLowerCase();
+    }
+  }
+  return "";
+}
+
+function nextEditableExamIndex(startIndex, direction) {
+  if (!state.activeExamWord) {
+    return -1;
+  }
+  const locked = examLockedIndexes(state.activeExamWord);
+  let index = startIndex + direction;
+  while (index >= 0 && index < state.activeExamWord.word.length) {
+    if (!locked.has(index)) {
+      return index;
+    }
+    index += direction;
+  }
+  return -1;
+}
+
+function focusExamInput(index) {
+  const input = elements.answerSlots.querySelector(`[data-index="${index}"]`);
+  if (input && typeof input.focus === "function") {
+    input.focus();
+    if (typeof input.select === "function") {
+      input.select();
+    }
+  }
+}
+
+function handleExamInput(input) {
+  const index = Number(input.dataset.index);
+  const locked = examLockedIndexes(state.activeExamWord);
+  if (locked.has(index)) {
+    input.value = state.selectedLetters[index].toUpperCase();
+    return;
+  }
+  const letter = normalizeExamLetter(input.value);
+  state.selectedLetters[index] = letter;
+  input.value = letter.toUpperCase();
+  if (letter) {
+    const nextIndex = nextEditableExamIndex(index, 1);
+    if (nextIndex >= 0) {
+      focusExamInput(nextIndex);
+    }
+  }
+}
+
+function handleExamInputKeydown(event, input) {
+  const index = Number(input.dataset.index);
+  if (event.key === "Backspace" && !input.value) {
+    const previousIndex = nextEditableExamIndex(index, -1);
+    if (previousIndex >= 0) {
+      state.selectedLetters[previousIndex] = "";
+      renderAnswerSlots();
+      focusExamInput(previousIndex);
+      event.preventDefault();
+    }
+    return;
+  }
+  if (event.key === "ArrowLeft") {
+    const previousIndex = nextEditableExamIndex(index, -1);
+    if (previousIndex >= 0) {
+      focusExamInput(previousIndex);
+      event.preventDefault();
+    }
+    return;
+  }
+  if (event.key === "ArrowRight") {
+    const nextIndex = nextEditableExamIndex(index, 1);
+    if (nextIndex >= 0) {
+      focusExamInput(nextIndex);
+      event.preventDefault();
+    }
+  }
 }
 
 function wordInitial(word) {
@@ -1447,7 +1589,7 @@ function renderExamQuestion() {
   if (!state.wordById.has(state.activeExamWord.id)) {
     throw new Error(`Exam word is not from database: ${state.activeExamWord.id}`);
   }
-  state.selectedLetters = [];
+  state.selectedLetters = initialExamLetters(state.activeExamWord);
   elements.examFeedback.textContent = "";
   elements.examFeedback.className = "feedback";
   renderExamHint(state.activeExamWord);
@@ -1462,11 +1604,30 @@ function renderExamQuestion() {
 function renderAnswerSlots() {
   elements.answerSlots.innerHTML = "";
   const letters = state.activeExamWord.word.split("");
+  const locked = examLockedIndexes(state.activeExamWord);
   letters.forEach((letter, index) => {
-    const slot = document.createElement("div");
+    const slot = document.createElement(isInputExamDifficulty() ? "input" : "div");
     slot.className = "answer-slot";
+    if (isInputExamDifficulty()) {
+      slot.classList.add("answer-input");
+      slot.type = "text";
+      slot.maxLength = 1;
+      slot.inputMode = "text";
+      slot.autocomplete = "off";
+      slot.autocapitalize = "characters";
+      slot.value = state.selectedLetters[index] ? state.selectedLetters[index].toUpperCase() : "";
+      if (locked.has(index)) {
+        slot.readOnly = true;
+        slot.tabIndex = -1;
+        slot.classList.add("locked");
+      }
+      slot.addEventListener("input", () => handleExamInput(slot));
+      slot.addEventListener("keydown", (event) => handleExamInputKeydown(event, slot));
+      slot.addEventListener("focus", () => slot.select());
+    } else {
+      slot.textContent = state.selectedLetters[index] || "";
+    }
     slot.dataset.index = String(index);
-    slot.textContent = state.selectedLetters[index] || "";
     slot.setAttribute("aria-label", `Letter ${index + 1} of ${letters.length}`);
     elements.answerSlots.appendChild(slot);
   });
@@ -1474,6 +1635,10 @@ function renderAnswerSlots() {
 
 function renderLetterBank() {
   elements.letterBank.innerHTML = "";
+  elements.letterBank.classList.toggle("hidden", isInputExamDifficulty());
+  if (isInputExamDifficulty()) {
+    return;
+  }
   const letters = shuffleArray(state.activeExamWord.word.split(""));
   letters.forEach((letter, index) => {
     const button = document.createElement("button");
@@ -1488,7 +1653,7 @@ function renderLetterBank() {
 }
 
 function pickLetter(button) {
-  if (button.disabled || !state.activeExamWord) {
+  if (isInputExamDifficulty() || button.disabled || !state.activeExamWord) {
     return;
   }
   if (state.selectedLetters.length >= state.activeExamWord.word.length) {
@@ -1500,6 +1665,18 @@ function pickLetter(button) {
 }
 
 function eraseLetter() {
+  if (isInputExamDifficulty()) {
+    const locked = examLockedIndexes(state.activeExamWord);
+    for (let index = state.selectedLetters.length - 1; index >= 0; index -= 1) {
+      if (!locked.has(index) && state.selectedLetters[index]) {
+        state.selectedLetters[index] = "";
+        renderAnswerSlots();
+        focusExamInput(index);
+        return;
+      }
+    }
+    return;
+  }
   if (state.selectedLetters.length === 0) {
     return;
   }
@@ -1517,7 +1694,7 @@ function checkAnswer() {
   if (!state.activeExamWord) {
     return;
   }
-  const answer = state.selectedLetters.join("");
+  const answer = getExamAnswer();
   if (answer.length !== state.activeExamWord.word.length) {
     renderBpmfPairs(elements.examFeedback, LABEL_PAIRS.needMoreLetters);
     elements.examFeedback.className = "feedback warn";
@@ -1558,6 +1735,11 @@ function nextExamQuestion() {
 function fillCorrectExamAnswerForSelfTest() {
   if (!state.activeExamWord) {
     return false;
+  }
+  if (isInputExamDifficulty()) {
+    state.selectedLetters = state.activeExamWord.word.split("");
+    renderAnswerSlots();
+    return true;
   }
   const letters = state.activeExamWord.word.split("");
   let allPicked = true;
@@ -2010,6 +2192,97 @@ function maybeRunInteractionTest() {
   }, 1350);
 }
 
+function examDifficultySnapshot(name) {
+  const slots = Array.from(elements.answerSlots.querySelectorAll(".answer-slot"));
+  const inputs = Array.from(elements.answerSlots.querySelectorAll(".answer-input"));
+  const letterTiles = Array.from(elements.letterBank.querySelectorAll(".letter-tile"));
+  return {
+    name,
+    slots: slots.length,
+    inputs: inputs.length,
+    letterTiles: letterTiles.length,
+    locked: inputs.filter((input) => input.readOnly).length,
+    values: inputs.map((input) => input.value).join("")
+  };
+}
+
+function maybeRunExamDifficultyTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("difficultytest") !== "1") {
+    return;
+  }
+  window.setTimeout(() => {
+    const results = [];
+    setMode("exam");
+    clearFilters();
+
+    setExamDifficulty("low");
+    startExam();
+    const lowWord = state.activeExamWord;
+    const lowSnapshot = examDifficultySnapshot("low");
+    const lowFilled = fillCorrectExamAnswerForSelfTest();
+    const lowChecked = checkAnswer();
+    recordInteractionResult(
+      results,
+      "low-letter-bank",
+      lowWord && lowSnapshot.slots === lowWord.word.length &&
+        lowSnapshot.inputs === 0 &&
+        lowSnapshot.letterTiles === lowWord.word.length &&
+        lowFilled &&
+        lowChecked,
+      lowSnapshot
+    );
+
+    setExamDifficulty("medium");
+    startExam();
+    const mediumWord = state.activeExamWord;
+    const mediumSnapshot = examDifficultySnapshot("medium");
+    const mediumExpected = mediumWord ? `${mediumWord.word[0]}${mediumWord.word[mediumWord.word.length - 1]}`.toUpperCase() : "";
+    const mediumFilled = fillCorrectExamAnswerForSelfTest();
+    const mediumChecked = checkAnswer();
+    recordInteractionResult(
+      results,
+      "medium-first-last",
+      mediumWord && mediumSnapshot.slots === mediumWord.word.length &&
+        mediumSnapshot.inputs === mediumWord.word.length &&
+        mediumSnapshot.letterTiles === 0 &&
+        mediumSnapshot.locked === 2 &&
+        mediumSnapshot.values === mediumExpected &&
+        mediumFilled &&
+        mediumChecked,
+      mediumSnapshot
+    );
+
+    setExamDifficulty("high");
+    startExam();
+    const highWord = state.activeExamWord;
+    const highSnapshot = examDifficultySnapshot("high");
+    const highFilled = fillCorrectExamAnswerForSelfTest();
+    const highChecked = checkAnswer();
+    recordInteractionResult(
+      results,
+      "high-input-only",
+      highWord && highSnapshot.slots === highWord.word.length &&
+        highSnapshot.inputs === highWord.word.length &&
+        highSnapshot.letterTiles === 0 &&
+        highSnapshot.locked === 0 &&
+        highSnapshot.values === "" &&
+        highFilled &&
+        highChecked,
+      highSnapshot
+    );
+
+    setExamDifficulty("low");
+    clearFilters();
+    setMode("practice");
+    const marker = document.createElement("div");
+    marker.id = "examDifficultyTestResult";
+    marker.dataset.results = JSON.stringify(results);
+    marker.textContent = results.every((item) => item.pass) ? "PASS" : "FAIL";
+    document.body.appendChild(marker);
+  }, 1500);
+}
+
 function textNodeIsCoveredByBpmf(node) {
   let parent = node.parentElement;
   while (parent) {
@@ -2119,6 +2392,10 @@ function bindEvents() {
   elements.modeTabs.forEach((tab) => {
     tab.addEventListener("click", () => setMode(tab.dataset.mode));
   });
+  elements.examDifficultyButtons.forEach((button) => {
+    button.addEventListener("click", () => setExamDifficulty(button.dataset.examDifficulty));
+  });
+  updateExamDifficultyButtons();
   elements.searchInput.addEventListener("input", filterWords);
   elements.initialFilter.addEventListener("change", filterWords);
   elements.levelFilter.addEventListener("change", filterWords);
@@ -2228,6 +2505,7 @@ async function init() {
     maybeRunToolbarControlTest();
     maybeRunToolbarMatrixTest();
     maybeRunInteractionTest();
+    maybeRunExamDifficultyTest();
     maybeRunBpmfCoverageTest();
     maybeRunAudioPipelineTest();
   } catch (error) {
