@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Spell Quest Junior</title>
-  <link rel="stylesheet" href="styles.css?v=20260514-bpmf-v3-preview">
+  <link rel="stylesheet" href="styles.css?v=20260522-exam-award-slot-local">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -219,7 +219,15 @@
               <button class="difficulty-button" type="button" data-exam-difficulty="medium" aria-pressed="false">Medium</button>
               <button class="difficulty-button" type="button" data-exam-difficulty="high" aria-pressed="false">High</button>
             </div>
-            <div class="score-pill"><span id="examScore">0</span> / <span id="examTotal">0</span></div>
+            <div id="examInitialScope" class="exam-initial-scope" aria-label="Exam initial range"></div>
+            <div class="exam-award-column">
+              <div id="examSessionPanel" class="exam-session-panel">
+                <p class="exam-session-title"></p>
+                <p class="exam-session-line"><span class="session-label answered"></span><strong id="examAnsweredCount">0</strong><span class="session-unit answered"></span></p>
+                <p class="exam-session-line"><span class="session-label correct"></span><strong id="examCorrectCount">0</strong><span class="session-unit correct"></span></p>
+              </div>
+              <div id="examMedal" class="exam-medal hidden" aria-hidden="true"></div>
+            </div>
           </div>
           <p class="exam-note">
             <span data-bpmf-text="先聽發音，再用字母卡拼出答案。" data-bpmf="ㄒㄧㄢ ㄊㄧㄥ ㄈㄚ ㄧㄣ，ㄗㄞˋ ㄩㄥˋ ㄗˋ ㄇㄨˇ ㄎㄚˇ ㄆㄧㄣ ㄔㄨ ㄉㄚˊ ㄢˋ。"></span>
@@ -245,11 +253,13 @@
             <button id="eraseButton" type="button"><span data-bpmf-text="退一格" data-bpmf="ㄊㄨㄟˋ ㄧˋ ㄍㄜˊ"></span></button>
             <button id="checkButton" type="button"><span data-bpmf-text="檢查答案" data-bpmf="ㄐㄧㄢˇ ㄔㄚˊ ㄉㄚˊ ㄢˋ"></span></button>
             <button id="nextExamButton" type="button"><span data-bpmf-text="下一題" data-bpmf="ㄒㄧㄚˋ ㄧˋ ㄊㄧˊ"></span></button>
+            <button id="resetExamSessionButton" type="button"></button>
           </div>
           <section class="exam-hint">
             <h3><span data-bpmf-text="提示" data-bpmf="ㄊㄧˊ ㄕˋ"></span></h3>
             <p id="examHint">hint</p>
           </section>
+          <div id="examCelebration" class="exam-celebration hidden" aria-live="polite" aria-atomic="true"></div>
         </article>
       </section>
     </section>
@@ -259,6 +269,6 @@
     <button class="letter-tile" type="button"></button>
   </template>
 
-  <script src="app.js?v=20260514-bpmf-v3-preview"></script>
+  <script src="app.js?v=20260522-exam-award-slot-local"></script>
 </body>
 </html>

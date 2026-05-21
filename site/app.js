@@ -64,8 +64,16 @@ const state = {
   knownWords: new Set(),
   examWords: [],
   examIndex: 0,
-  examScore: 0,
+  examAnsweredCount: 0,
+  examCorrectCount: 0,
+  examStreak: 0,
+  examAnswerChecked: false,
+  examCompleted: false,
+  celebrationTimer: null,
+  celebrationAudioContext: null,
   examDifficulty: "low",
+  examInitialMode: "single",
+  selectedExamInitials: new Set(),
   selectedLetters: [],
   activeExamWord: null,
   questionPacks: []
@@ -115,9 +123,18 @@ const elements = {
   knownButton: document.getElementById("knownButton"),
   audioSelect: document.getElementById("audioSelect"),
   sourceAudio: document.getElementById("sourceAudio"),
-  examScore: document.getElementById("examScore"),
-  examTotal: document.getElementById("examTotal"),
+  examSessionPanel: document.getElementById("examSessionPanel"),
+  examAnsweredCount: document.getElementById("examAnsweredCount"),
+  examCorrectCount: document.getElementById("examCorrectCount"),
+  examMedal: document.getElementById("examMedal"),
+  resetExamSessionButton: document.getElementById("resetExamSessionButton"),
+  examCelebration: document.getElementById("examCelebration"),
   examDifficultyButtons: Array.from(document.querySelectorAll("[data-exam-difficulty]")),
+  examInitialScope: document.getElementById("examInitialScope"),
+  examInitialModeButtons: [],
+  examInitialPicker: null,
+  examInitialSummary: null,
+  examInitialLetterButtons: [],
   playExamWord: document.getElementById("playExamWord"),
   playExamHintZh: document.getElementById("playExamHintZh"),
   newExamButton: document.getElementById("newExamButton"),
@@ -249,6 +266,116 @@ const LABEL_PAIRS = {
     { text: "想", bpmf: "ㄒㄧㄤˇ" },
     { text: "一", bpmf: "ㄧˊ" },
     { text: "下", bpmf: "ㄒㄧㄚˋ" }
+  ]
+};
+
+const EXAM_INITIAL_LABEL_PAIRS = {
+  scopeTitle: [
+    { text: "字", bpmf: "ㄗˋ" },
+    { text: "頭", bpmf: "ㄊㄡˊ" },
+    { text: "範", bpmf: "ㄈㄢˋ" },
+    { text: "圍", bpmf: "ㄨㄟˊ" }
+  ],
+  single: [
+    { text: "單", bpmf: "ㄉㄢ" },
+    { text: "一", bpmf: "ㄧ" }
+  ],
+  custom: [
+    { text: "自", bpmf: "ㄗˋ" },
+    { text: "選", bpmf: "ㄒㄩㄢˇ" }
+  ],
+  customInitials: [
+    { text: "自", bpmf: "ㄗˋ" },
+    { text: "選", bpmf: "ㄒㄩㄢˇ" },
+    { text: "字", bpmf: "ㄗˋ" },
+    { text: "頭", bpmf: "ㄊㄡˊ" }
+  ],
+  selected: [
+    { text: "已", bpmf: "ㄧˇ" },
+    { text: "選", bpmf: "ㄒㄩㄢˇ" }
+  ],
+  total: [
+    { text: "共", bpmf: "ㄍㄨㄥˋ" }
+  ],
+  words: [
+    { text: "字", bpmf: "ㄗˋ" }
+  ],
+  questionScope: [
+    { text: "出", bpmf: "ㄔㄨ" },
+    { text: "題", bpmf: "ㄊㄧˊ" },
+    { text: "範", bpmf: "ㄈㄢˋ" },
+    { text: "圍", bpmf: "ㄨㄟˊ" }
+  ],
+  chooseOne: [
+    { text: "請", bpmf: "ㄑㄧㄥˇ" },
+    { text: "至", bpmf: "ㄓˋ" },
+    { text: "少", bpmf: "ㄕㄠˇ" },
+    { text: "選", bpmf: "ㄒㄩㄢˇ" },
+    { text: "一", bpmf: "ㄧ" },
+    { text: "個", bpmf: "ㄍㄜˋ" },
+    { text: "字", bpmf: "ㄗˋ" },
+    { text: "頭", bpmf: "ㄊㄡˊ" }
+  ],
+  noItems: [
+    { text: "沒", bpmf: "ㄇㄟˊ" },
+    { text: "有", bpmf: "ㄧㄡˇ" },
+    { text: "符", bpmf: "ㄈㄨˊ" },
+    { text: "合", bpmf: "ㄏㄜˊ" },
+    { text: "題", bpmf: "ㄊㄧˊ" },
+    { text: "目", bpmf: "ㄇㄨˋ" }
+  ]
+};
+
+const EXAM_SESSION_LABEL_PAIRS = {
+  sessionTitle: [
+    { text: "本", bpmf: "ㄅㄣˇ" },
+    { text: "次", bpmf: "ㄘˋ" },
+    { text: "測", bpmf: "ㄘㄜˋ" },
+    { text: "驗", bpmf: "ㄧㄢˋ" }
+  ],
+  answered: [
+    { text: "已", bpmf: "ㄧˇ" },
+    { text: "考", bpmf: "ㄎㄠˇ" }
+  ],
+  correct: [
+    { text: "答", bpmf: "ㄉㄚˊ" },
+    { text: "對", bpmf: "ㄉㄨㄟˋ" }
+  ],
+  questions: [
+    { text: "題", bpmf: "ㄊㄧˊ" }
+  ],
+  resetThis: [
+    { text: "歸", bpmf: "ㄍㄨㄟ" },
+    { text: "零", bpmf: "ㄌㄧㄥˊ" },
+    { text: "本", bpmf: "ㄅㄣˇ" },
+    { text: "次", bpmf: "ㄘˋ" }
+  ],
+  completed: [
+    { text: "本", bpmf: "ㄅㄣˇ" },
+    { text: "次", bpmf: "ㄘˋ" },
+    { text: "範", bpmf: "ㄈㄢˋ" },
+    { text: "圍", bpmf: "ㄨㄟˊ" },
+    { text: "已", bpmf: "ㄧˇ" },
+    { text: "完", bpmf: "ㄨㄢˊ" },
+    { text: "成", bpmf: "ㄔㄥˊ" }
+  ],
+  congrats: [
+    { text: "恭", bpmf: "ㄍㄨㄥ" },
+    { text: "喜", bpmf: "ㄒㄧˇ" },
+    { text: "連", bpmf: "ㄌㄧㄢˊ" },
+    { text: "對", bpmf: "ㄉㄨㄟˋ" }
+  ],
+  bronzeMedal: [
+    { text: "銅", bpmf: "ㄊㄨㄥˊ" },
+    { text: "牌", bpmf: "ㄆㄞˊ" }
+  ],
+  silverMedal: [
+    { text: "銀", bpmf: "ㄧㄣˊ" },
+    { text: "牌", bpmf: "ㄆㄞˊ" }
+  ],
+  goldMedal: [
+    { text: "金", bpmf: "ㄐㄧㄣ" },
+    { text: "牌", bpmf: "ㄆㄞˊ" }
   ]
 };
 
@@ -901,6 +1028,234 @@ function buildInitialFilter() {
   });
 }
 
+function availableInitialLetters() {
+  return FIRST_LETTERS.filter((letter) =>
+    state.words.some((word) => wordInitial(word) === letter)
+  );
+}
+
+function selectAllExamInitials() {
+  state.selectedExamInitials = new Set(availableInitialLetters());
+}
+
+function selectedExamInitialList() {
+  return FIRST_LETTERS.filter((letter) => state.selectedExamInitials.has(letter));
+}
+
+function customExamInitialsAreAllSelected() {
+  const available = availableInitialLetters();
+  return available.length > 0 &&
+    available.every((letter) => state.selectedExamInitials.has(letter)) &&
+    state.selectedExamInitials.size === available.length;
+}
+
+function ensureCustomExamInitials() {
+  if (state.selectedExamInitials.size > 0) {
+    return;
+  }
+  const initial = elements.initialFilter ? elements.initialFilter.value : "all";
+  if (initial !== "all") {
+    state.selectedExamInitials = new Set([initial]);
+    return;
+  }
+  selectAllExamInitials();
+}
+
+function wordMatchesBaseExamFilters(word) {
+  const needle = normalizeText(elements.searchInput.value);
+  const level = elements.levelFilter.value;
+  const topic = elements.topicFilter.value;
+  const levelOk = level === "all" || word.level === level;
+  const topicOk = topic === "all" || word.topic === topic;
+  const searchOk = needle.length === 0 ||
+    includesText(word.word, needle) ||
+    includesText(word.zh, needle) ||
+    includesText(word.source, needle) ||
+    includesText(word.topic, needle) ||
+    includesText(word.topicZh, needle);
+  return levelOk && topicOk && searchOk;
+}
+
+function wordMatchesExamInitials(word) {
+  if (state.examInitialMode === "custom") {
+    ensureCustomExamInitials();
+    return state.selectedExamInitials.has(wordInitial(word));
+  }
+  const initial = elements.initialFilter ? elements.initialFilter.value : "all";
+  return initial === "all" || wordInitial(word) === initial;
+}
+
+function examCandidateWords() {
+  return state.words.filter((word) =>
+    wordMatchesBaseExamFilters(word) && wordMatchesExamInitials(word)
+  );
+}
+
+function examInitialSummaryCount() {
+  return examCandidateWords().length;
+}
+
+function buildExamInitialScope() {
+  if (!elements.examInitialScope) {
+    return;
+  }
+  elements.examInitialScope.innerHTML = "";
+  elements.examInitialModeButtons = [];
+  elements.examInitialLetterButtons = [];
+
+  const topLine = document.createElement("div");
+  topLine.className = "exam-scope-topline";
+
+  const label = document.createElement("p");
+  label.className = "exam-scope-label";
+  appendBpmfPairs(label, EXAM_INITIAL_LABEL_PAIRS.scopeTitle, "bpmf-label");
+  topLine.appendChild(label);
+
+  const modeGroup = document.createElement("div");
+  modeGroup.className = "exam-scope-mode";
+  modeGroup.setAttribute("role", "group");
+  modeGroup.setAttribute("aria-label", "Exam initial mode");
+  [
+    { mode: "single", labelPairs: EXAM_INITIAL_LABEL_PAIRS.single },
+    { mode: "custom", labelPairs: EXAM_INITIAL_LABEL_PAIRS.custom }
+  ].forEach((item) => {
+    const button = document.createElement("button");
+    button.className = "scope-mode-button";
+    button.type = "button";
+    button.dataset.examInitialMode = item.mode;
+    appendBpmfPairs(button, item.labelPairs, "bpmf-button");
+    button.addEventListener("click", () => setExamInitialMode(item.mode));
+    modeGroup.appendChild(button);
+    elements.examInitialModeButtons.push(button);
+  });
+  topLine.appendChild(modeGroup);
+  elements.examInitialScope.appendChild(topLine);
+
+  const picker = document.createElement("div");
+  picker.className = "exam-initial-picker";
+  picker.setAttribute("role", "group");
+  picker.setAttribute("aria-label", "Custom exam initials");
+  const pickerLabel = document.createElement("span");
+  pickerLabel.className = "exam-picker-label";
+  appendBpmfPairs(pickerLabel, EXAM_INITIAL_LABEL_PAIRS.customInitials, "bpmf-label");
+  picker.appendChild(pickerLabel);
+  availableInitialLetters().forEach((letter) => {
+    const button = document.createElement("button");
+    button.className = "exam-initial-button";
+    button.type = "button";
+    button.dataset.examInitial = letter;
+    button.textContent = letter;
+    button.addEventListener("click", () => toggleExamInitial(letter));
+    picker.appendChild(button);
+    elements.examInitialLetterButtons.push(button);
+  });
+  elements.examInitialPicker = picker;
+  elements.examInitialScope.appendChild(picker);
+
+  const summary = document.createElement("p");
+  summary.className = "exam-initial-summary";
+  elements.examInitialSummary = summary;
+  elements.examInitialScope.appendChild(summary);
+  renderExamInitialScope();
+}
+
+function renderExamInitialScope() {
+  if (!elements.examInitialScope || !elements.examInitialSummary) {
+    return;
+  }
+  elements.examInitialModeButtons.forEach((button) => {
+    const active = button.dataset.examInitialMode === state.examInitialMode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  if (elements.examInitialPicker) {
+    elements.examInitialPicker.classList.toggle("hidden", state.examInitialMode !== "custom");
+  }
+  elements.examInitialLetterButtons.forEach((button) => {
+    const active = state.selectedExamInitials.has(button.dataset.examInitial);
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  renderExamInitialSummary();
+}
+
+function renderExamInitialSummary() {
+  if (!elements.examInitialSummary) {
+    return;
+  }
+  elements.examInitialSummary.innerHTML = "";
+  appendBpmfPairs(elements.examInitialSummary, EXAM_INITIAL_LABEL_PAIRS.questionScope, "bpmf-label");
+  appendPlain(elements.examInitialSummary, "：");
+  if (state.examInitialMode === "custom") {
+    ensureCustomExamInitials();
+    const selected = selectedExamInitialList();
+    if (selected.length === 0) {
+      appendBpmfPairs(elements.examInitialSummary, EXAM_INITIAL_LABEL_PAIRS.chooseOne, "bpmf-label");
+      return;
+    }
+    appendBpmfPairs(elements.examInitialSummary, EXAM_INITIAL_LABEL_PAIRS.selected, "bpmf-label");
+    appendPlain(elements.examInitialSummary, ` ${selected.join(" + ")}，`);
+  } else {
+    const initial = elements.initialFilter ? elements.initialFilter.value : "all";
+    appendPlain(elements.examInitialSummary, ` ${initial === "all" ? "All" : initial}，`);
+  }
+  appendBpmfPairs(elements.examInitialSummary, EXAM_INITIAL_LABEL_PAIRS.total, "bpmf-label");
+  appendPlain(elements.examInitialSummary, ` ${examInitialSummaryCount()} `);
+  appendBpmfPairs(elements.examInitialSummary, EXAM_INITIAL_LABEL_PAIRS.words, "bpmf-label");
+  if (examInitialSummaryCount() === 0) {
+    appendPlain(elements.examInitialSummary, " · ");
+    appendBpmfPairs(elements.examInitialSummary, EXAM_INITIAL_LABEL_PAIRS.noItems, "bpmf-label");
+  }
+}
+
+function setExamInitialMode(mode, options = {}) {
+  if (mode !== "single" && mode !== "custom") {
+    return;
+  }
+  state.examInitialMode = mode;
+  if (mode === "custom") {
+    ensureCustomExamInitials();
+  }
+  renderExamInitialScope();
+  if (isExamModeActive() && !options.skipExamRefresh) {
+    startExam();
+  }
+}
+
+function toggleExamInitial(letter) {
+  if (!availableInitialLetters().includes(letter)) {
+    return;
+  }
+  ensureCustomExamInitials();
+  if (state.selectedExamInitials.has(letter)) {
+    if (state.selectedExamInitials.size <= 1) {
+      renderExamInitialScope();
+      return;
+    }
+    state.selectedExamInitials.delete(letter);
+  } else {
+    state.selectedExamInitials.add(letter);
+  }
+  renderExamInitialScope();
+  if (isExamModeActive()) {
+    startExam();
+  }
+}
+
+function setCustomExamInitials(letters, options = {}) {
+  const available = availableInitialLetters();
+  const selected = letters.filter((letter) => available.includes(letter));
+  if (selected.length === 0) {
+    return;
+  }
+  state.selectedExamInitials = new Set(selected);
+  state.examInitialMode = "custom";
+  renderExamInitialScope();
+  if (isExamModeActive() && !options.skipExamRefresh) {
+    startExam();
+  }
+}
+
 function hasActiveWordFilter() {
   const needle = normalizeText(elements.searchInput.value);
   const level = elements.levelFilter.value;
@@ -967,6 +1322,7 @@ function filterWords(options = {}) {
     renderEmptyPractice();
     updateStats();
     renderFilterStatus();
+    renderExamInitialScope();
     return;
   }
   if (state.currentIndex >= state.filteredWords.length) {
@@ -975,6 +1331,7 @@ function filterWords(options = {}) {
   renderPracticeCard();
   updateStats();
   renderFilterStatus();
+  renderExamInitialScope();
   if (filterChanged && isExamModeActive() && !options.skipExamRefresh) {
     startExam();
   }
@@ -987,6 +1344,9 @@ function clearFilters() {
   }
   elements.levelFilter.value = "all";
   elements.topicFilter.value = "all";
+  if (state.examInitialMode === "custom") {
+    selectAllExamInitials();
+  }
   filterWords({ resetIndex: true });
 }
 
@@ -1553,6 +1913,170 @@ function examHintChineseSpeech(word) {
   return `提示。中文意思是 ${word.zh}。主題是 ${word.topicZh}。詞性是 ${word.pos}。`;
 }
 
+function examCardElement() {
+  return elements.examView ? elements.examView.querySelector(".exam-card") : null;
+}
+
+function clearExamRecord() {
+  state.examAnsweredCount = 0;
+  state.examCorrectCount = 0;
+  state.examStreak = 0;
+  state.examAnswerChecked = false;
+  state.examCompleted = false;
+}
+
+function examAwardLevel() {
+  if (state.examCorrectCount >= 30) {
+    return "gold";
+  }
+  if (state.examCorrectCount >= 20) {
+    return "silver";
+  }
+  if (state.examCorrectCount >= 10) {
+    return "bronze";
+  }
+  return "";
+}
+
+function awardLabelPairs(level) {
+  if (level === "gold") {
+    return EXAM_SESSION_LABEL_PAIRS.goldMedal;
+  }
+  if (level === "silver") {
+    return EXAM_SESSION_LABEL_PAIRS.silverMedal;
+  }
+  if (level === "bronze") {
+    return EXAM_SESSION_LABEL_PAIRS.bronzeMedal;
+  }
+  return [];
+}
+
+function renderExamAward() {
+  const card = examCardElement();
+  const level = examAwardLevel();
+  if (card) {
+    card.classList.toggle("award-bronze", level === "bronze");
+    card.classList.toggle("award-silver", level === "silver");
+    card.classList.toggle("award-gold", level === "gold");
+  }
+  if (!elements.examMedal) {
+    return;
+  }
+  elements.examMedal.classList.toggle("hidden", !level);
+  elements.examMedal.classList.toggle("bronze", level === "bronze");
+  elements.examMedal.classList.toggle("silver", level === "silver");
+  elements.examMedal.classList.toggle("gold", level === "gold");
+  elements.examMedal.innerHTML = "";
+  if (level) {
+    elements.examMedal.setAttribute("aria-hidden", "false");
+    appendBpmfPairs(elements.examMedal, awardLabelPairs(level), "bpmf-medal");
+  } else {
+    elements.examMedal.setAttribute("aria-hidden", "true");
+  }
+}
+
+function renderExamSessionPanel() {
+  if (!elements.examSessionPanel) {
+    return;
+  }
+  const title = elements.examSessionPanel.querySelector(".exam-session-title");
+  const answeredLabel = elements.examSessionPanel.querySelector(".session-label.answered");
+  const correctLabel = elements.examSessionPanel.querySelector(".session-label.correct");
+  const answeredUnit = elements.examSessionPanel.querySelector(".session-unit.answered");
+  const correctUnit = elements.examSessionPanel.querySelector(".session-unit.correct");
+  renderBpmfPairs(title, EXAM_SESSION_LABEL_PAIRS.sessionTitle, "bpmf-label");
+  renderBpmfPairs(answeredLabel, EXAM_SESSION_LABEL_PAIRS.answered, "bpmf-label");
+  renderBpmfPairs(correctLabel, EXAM_SESSION_LABEL_PAIRS.correct, "bpmf-label");
+  renderBpmfPairs(answeredUnit, EXAM_SESSION_LABEL_PAIRS.questions, "bpmf-label");
+  renderBpmfPairs(correctUnit, EXAM_SESSION_LABEL_PAIRS.questions, "bpmf-label");
+  if (elements.examAnsweredCount) {
+    elements.examAnsweredCount.textContent = String(state.examAnsweredCount);
+  }
+  if (elements.examCorrectCount) {
+    elements.examCorrectCount.textContent = String(state.examCorrectCount);
+  }
+  if (elements.resetExamSessionButton && elements.resetExamSessionButton.childNodes.length === 0) {
+    appendBpmfPairs(elements.resetExamSessionButton, EXAM_SESSION_LABEL_PAIRS.resetThis, "bpmf-button");
+  }
+  renderExamAward();
+}
+
+function hideExamCelebration() {
+  if (state.celebrationTimer) {
+    window.clearTimeout(state.celebrationTimer);
+    state.celebrationTimer = null;
+  }
+  if (elements.examCelebration) {
+    elements.examCelebration.classList.add("hidden");
+    elements.examCelebration.innerHTML = "";
+  }
+}
+
+function playCelebrationSound() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      return;
+    }
+    const context = state.celebrationAudioContext || new AudioContextClass();
+    state.celebrationAudioContext = context;
+    if (context.state === "suspended") {
+      context.resume();
+    }
+    const now = context.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "triangle";
+      oscillator.frequency.setValueAtTime(frequency, now + index * 0.11);
+      gain.gain.setValueAtTime(0.0001, now + index * 0.11);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + index * 0.11 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.11 + 0.36);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(now + index * 0.11);
+      oscillator.stop(now + index * 0.11 + 0.38);
+    });
+  } catch (error) {
+    console.warn("Celebration sound skipped.");
+  }
+}
+
+function showExamCelebration(streak) {
+  if (!elements.examCelebration) {
+    playCelebrationSound();
+    return;
+  }
+  hideExamCelebration();
+  const burst = document.createElement("div");
+  burst.className = "celebration-burst";
+  for (let index = 0; index < 36; index += 1) {
+    const piece = document.createElement("span");
+    piece.className = "confetti-piece";
+    piece.style.setProperty("--x", `${(index % 12) - 5.5}`);
+    piece.style.setProperty("--delay", `${(index % 6) * 0.08}s`);
+    piece.style.setProperty("--spin", `${index % 2 === 0 ? 1 : -1}`);
+    burst.appendChild(piece);
+  }
+  const message = document.createElement("div");
+  message.className = "celebration-message";
+  appendBpmfPairs(message, EXAM_SESSION_LABEL_PAIRS.congrats, "bpmf-celebration");
+  appendPlain(message, ` ${streak} `);
+  appendBpmfPairs(message, EXAM_SESSION_LABEL_PAIRS.questions, "bpmf-celebration");
+  appendPlain(message, "!");
+  elements.examCelebration.appendChild(burst);
+  elements.examCelebration.appendChild(message);
+  elements.examCelebration.classList.remove("hidden");
+  playCelebrationSound();
+  state.celebrationTimer = window.setTimeout(hideExamCelebration, 5000);
+}
+
+function resetExamSession() {
+  hideExamCelebration();
+  clearExamRecord();
+  startExam({ resetRecord: false });
+}
+
 function setMode(mode) {
   const practiceMode = mode === "practice";
   elements.practiceView.classList.toggle("active", practiceMode);
@@ -1566,29 +2090,43 @@ function setMode(mode) {
 }
 
 function databaseOnlyExamSource() {
-  const source = state.filteredWords.length > 0 || hasActiveWordFilter() ? state.filteredWords : state.words;
+  const source = examCandidateWords();
   return source.filter((word) => state.wordById.has(word.id));
 }
 
-function startExam() {
+function startExam(options = {}) {
   const source = databaseOnlyExamSource();
-  state.examWords = shuffleArray(source).slice(0, 10);
+  state.examWords = shuffleArray(source);
   state.examIndex = 0;
-  state.examScore = 0;
-  elements.examTotal.textContent = String(state.examWords.length);
-  elements.examScore.textContent = "0";
+  if (options.resetRecord !== false) {
+    clearExamRecord();
+  }
+  renderExamSessionPanel();
   renderExamQuestion();
 }
 
 function renderExamQuestion() {
   if (state.examWords.length === 0) {
+    state.activeExamWord = null;
+    state.selectedLetters = [];
+    elements.answerSlots.innerHTML = "";
+    elements.letterBank.innerHTML = "";
+    elements.examFeedback.textContent = "";
+    elements.examFeedback.className = "feedback";
     renderBpmfPairs(elements.examHint, LABEL_PAIRS.noExamItems);
+    renderExamSessionPanel();
+    return;
+  }
+  if (state.examIndex >= state.examWords.length) {
+    renderExamComplete();
     return;
   }
   state.activeExamWord = state.examWords[state.examIndex];
   if (!state.wordById.has(state.activeExamWord.id)) {
     throw new Error(`Exam word is not from database: ${state.activeExamWord.id}`);
   }
+  state.examCompleted = false;
+  state.examAnswerChecked = false;
   state.selectedLetters = initialExamLetters(state.activeExamWord);
   elements.examFeedback.textContent = "";
   elements.examFeedback.className = "feedback";
@@ -1599,6 +2137,19 @@ function renderExamQuestion() {
   if (!isAndroidChrome()) {
     window.setTimeout(() => speakWordAudio(state.activeExamWord), 180);
   }
+}
+
+function renderExamComplete() {
+  state.examCompleted = true;
+  state.activeExamWord = null;
+  state.selectedLetters = [];
+  elements.answerSlots.innerHTML = "";
+  elements.letterBank.innerHTML = "";
+  elements.examFeedback.innerHTML = "";
+  appendBpmfPairs(elements.examFeedback, EXAM_SESSION_LABEL_PAIRS.completed, "bpmf-label");
+  elements.examFeedback.className = "feedback good";
+  renderBpmfPairs(elements.examHint, EXAM_SESSION_LABEL_PAIRS.completed);
+  renderExamSessionPanel();
 }
 
 function renderAnswerSlots() {
@@ -1701,9 +2252,21 @@ function checkAnswer() {
     return false;
   }
   const correct = answer.toLowerCase() === state.activeExamWord.word.toLowerCase();
+  if (!state.examAnswerChecked) {
+    state.examAnsweredCount += 1;
+    state.examAnswerChecked = true;
+    if (correct) {
+      state.examCorrectCount += 1;
+      state.examStreak += 1;
+      if (state.examStreak > 0 && state.examStreak % 5 === 0) {
+        showExamCelebration(state.examStreak);
+      }
+    } else {
+      state.examStreak = 0;
+    }
+    renderExamSessionPanel();
+  }
   if (correct) {
-    state.examScore += 1;
-    elements.examScore.textContent = String(state.examScore);
     elements.examFeedback.innerHTML = "";
     appendBpmfPairs(elements.examFeedback, LABEL_PAIRS.correct, "bpmf-label");
     appendPlain(elements.examFeedback, `：${state.activeExamWord.word}`);
@@ -1726,8 +2289,8 @@ function nextExamQuestion() {
   }
   state.examIndex += 1;
   if (state.examIndex >= state.examWords.length) {
-    state.examIndex = 0;
-    state.examWords = shuffleArray(state.examWords);
+    renderExamComplete();
+    return;
   }
   renderExamQuestion();
 }
@@ -1815,16 +2378,16 @@ function maybeRunZhuyinLayoutTest() {
       checked += 1;
       const safeGap = markRect.left - hanRect.right;
       if (safeGap < 2) {
-        issues.push(`unsafe-gap-${index}-${han.textContent}-${safeGap.toFixed(1)}`);
+        issues.push(`unsafe-gap-${index}-${safeGap.toFixed(1)}`);
       }
       if (markRect.left < hanRect.left) {
-        issues.push(`wrong-side-${index}-${han.textContent}-${hanRect.left.toFixed(1)}-${markRect.left.toFixed(1)}`);
+        issues.push(`wrong-side-${index}-${hanRect.left.toFixed(1)}-${markRect.left.toFixed(1)}`);
       }
       if (markRect.width > hanRect.width * 0.72) {
-        issues.push(`wide-mark-${index}-${han.textContent}-${markRect.width.toFixed(1)}-${hanRect.width.toFixed(1)}`);
+        issues.push(`wide-mark-${index}-${markRect.width.toFixed(1)}-${hanRect.width.toFixed(1)}`);
       }
       if (markRect.height > hanRect.height + 0.5) {
-        issues.push(`tall-mark-${index}-${han.textContent}-${markRect.height.toFixed(1)}-${hanRect.height.toFixed(1)}`);
+        issues.push(`tall-mark-${index}-${markRect.height.toFixed(1)}-${hanRect.height.toFixed(1)}`);
       }
     });
     Array.from(document.querySelectorAll(".bpmf-plain")).forEach((plain, index) => {
@@ -2283,6 +2846,322 @@ function maybeRunExamDifficultyTest() {
   }, 1500);
 }
 
+function examWordsMatchInitials(letters) {
+  return state.examWords.length > 0 &&
+    state.examWords.every((word) => letters.includes(wordInitial(word)));
+}
+
+function examWordsMatchCriteria(letters, criteria = {}) {
+  return state.examWords.length > 0 &&
+    state.examWords.every((word) => {
+      const initialOk = letters.includes(wordInitial(word));
+      const levelOk = !criteria.level || word.level === criteria.level;
+      const topicOk = !criteria.topic || word.topic === criteria.topic;
+      const searchOk = !criteria.search ||
+        includesText(word.word, normalizeText(criteria.search)) ||
+        includesText(word.zh, normalizeText(criteria.search)) ||
+        includesText(word.source, normalizeText(criteria.search)) ||
+        includesText(word.topic, normalizeText(criteria.search)) ||
+        includesText(word.topicZh, normalizeText(criteria.search));
+      return initialOk && levelOk && topicOk && searchOk;
+    });
+}
+
+function maybeRunExamCustomInitialTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("custominitialtest") !== "1") {
+    return;
+  }
+  window.setTimeout(() => {
+    const results = [];
+    setMode("exam");
+    clearFilters();
+
+    setExamInitialMode("single", { skipExamRefresh: true });
+    setToolbarFilters({ initial: "A" });
+    startExam();
+    recordInteractionResult(results, "single-a-kept", examWordsMatchInitials(["A"]), {
+      examWords: state.examWords.length
+    });
+
+    clearFilters();
+    setCustomExamInitials(["A", "C"], { skipExamRefresh: true });
+    startExam();
+    recordInteractionResult(results, "custom-a-c", examWordsMatchInitials(["A", "C"]), {
+      selected: selectedExamInitialList().join("")
+    });
+
+    setToolbarFilters({ initial: "D" });
+    setCustomExamInitials(["E", "F"], { skipExamRefresh: true });
+    startExam();
+    const practiceStillD = state.filteredWords.length > 0 &&
+      state.filteredWords.every((word) => wordInitial(word) === "D");
+    recordInteractionResult(results, "custom-ignores-single-in-exam", practiceStillD && examWordsMatchInitials(["E", "F"]), {
+      practiceWords: state.filteredWords.length,
+      examWords: state.examWords.length
+    });
+
+    const target = state.words.find((word) => ["E", "F", "G", "H"].includes(wordInitial(word)));
+    if (target) {
+      clearFilters();
+      setCustomExamInitials([wordInitial(target)], { skipExamRefresh: true });
+      setToolbarFilters({ search: target.word, level: target.level, topic: target.topic });
+      startExam();
+      recordInteractionResult(
+        results,
+        "custom-with-search-level-topic",
+        state.examWords.length === 1 &&
+          state.examWords[0].id === target.id &&
+          examWordsMatchCriteria([wordInitial(target)], {
+            search: target.word,
+            level: target.level,
+            topic: target.topic
+          }),
+        { target: target.word, examWords: state.examWords.length }
+      );
+    } else {
+      recordInteractionResult(results, "custom-with-search-level-topic", false, { target: "" });
+    }
+
+    clearFilters();
+    setCustomExamInitials(["A"], { skipExamRefresh: true });
+    toggleExamInitial("A");
+    recordInteractionResult(results, "cannot-empty-custom", selectedExamInitialList().length === 1 && selectedExamInitialList()[0] === "A", {
+      selected: selectedExamInitialList().join("")
+    });
+
+    clearFilters();
+    recordInteractionResult(results, "clear-keeps-custom-but-resets-all", state.examInitialMode === "custom" && customExamInitialsAreAllSelected(), {
+      selected: selectedExamInitialList().length
+    });
+
+    setExamInitialMode("single", { skipExamRefresh: true });
+    setToolbarFilters({ initial: "H" });
+    startExam();
+    recordInteractionResult(results, "single-after-custom", examWordsMatchInitials(["H"]), {
+      examWords: state.examWords.length
+    });
+
+    clearFilters();
+    setExamInitialMode("single", { skipExamRefresh: true });
+    setMode("practice");
+    const marker = document.createElement("div");
+    marker.id = "examCustomInitialTestResult";
+    marker.dataset.results = JSON.stringify(results);
+    marker.textContent = results.every((item) => item.pass) ? "PASS" : "FAIL";
+    document.body.appendChild(marker);
+  }, 1650);
+}
+
+function rectanglesOverlap(first, second) {
+  return first.left < second.right &&
+    first.right > second.left &&
+    first.top < second.bottom &&
+    first.bottom > second.top;
+}
+
+function examMedalLayoutStatus() {
+  if (!elements.examMedal || elements.examMedal.classList.contains("hidden")) {
+    return { pass: false, overlaps: ["hidden"] };
+  }
+  const medalRect = elements.examMedal.getBoundingClientRect();
+  const selectors = [
+    ".exam-difficulty",
+    "#examInitialScope",
+    "#examSessionPanel",
+    ".exam-controls button",
+    "#answerSlots .answer-slot",
+    "#letterBank .letter-tile",
+    ".card-actions button",
+    ".exam-hint"
+  ];
+  const overlaps = [];
+  selectors.forEach((selector) => {
+    Array.from(document.querySelectorAll(selector)).forEach((target, index) => {
+      const rect = target.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        return;
+      }
+      if (rectanglesOverlap(medalRect, rect)) {
+        overlaps.push(`${selector}:${index}:${Math.round(rect.left)},${Math.round(rect.top)},${Math.round(rect.right)},${Math.round(rect.bottom)}`);
+      }
+    });
+  });
+  return { pass: overlaps.length === 0, overlaps };
+}
+
+function examMedalLayoutIsSafe() {
+  return examMedalLayoutStatus().pass;
+}
+
+function wrongAnswerLettersFor(word) {
+  const letters = word.word.split("");
+  const wrongLetters = letters.map((letter) => letter.toLowerCase() === "a" ? "b" : "a");
+  if (wrongLetters.join("").toLowerCase() === word.word.toLowerCase()) {
+    wrongLetters[0] = wrongLetters[0].toLowerCase() === "a" ? "b" : "a";
+  }
+  return wrongLetters;
+}
+
+function maybeRunExamSessionTest() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("sessiontest") !== "1") {
+    return;
+  }
+  window.setTimeout(() => {
+    const results = [];
+    setMode("exam");
+    clearFilters();
+    setExamInitialMode("single", { skipExamRefresh: true });
+    setExamDifficulty("low");
+    startExam();
+
+    const sourceCount = databaseOnlyExamSource().length;
+    recordInteractionResult(
+      results,
+      "award-hidden-before-threshold",
+      elements.examMedal && elements.examMedal.classList.contains("hidden") && !examCardElement().classList.contains("award-bronze"),
+      { medalClass: elements.examMedal ? elements.examMedal.className : "" }
+    );
+    recordInteractionResult(
+      results,
+      "full-range-no-ten-cap",
+      sourceCount > 10 && state.examWords.length === sourceCount,
+      { sourceCount, examWords: state.examWords.length }
+    );
+
+    const correctWord = state.activeExamWord;
+    const correctFilled = fillCorrectExamAnswerForSelfTest();
+    const correctChecked = checkAnswer();
+    const duplicateChecked = checkAnswer();
+    recordInteractionResult(
+      results,
+      "correct-counts-once",
+      correctWord &&
+        correctFilled &&
+        correctChecked &&
+        duplicateChecked &&
+        state.examAnsweredCount === 1 &&
+        state.examCorrectCount === 1 &&
+        state.examStreak === 1,
+      {
+        answered: state.examAnsweredCount,
+        correct: state.examCorrectCount,
+        streak: state.examStreak
+      }
+    );
+
+    nextExamQuestion();
+    if (state.activeExamWord) {
+      state.selectedLetters = wrongAnswerLettersFor(state.activeExamWord);
+      renderAnswerSlots();
+      checkAnswer();
+    }
+    recordInteractionResult(
+      results,
+      "wrong-resets-streak",
+      state.examAnsweredCount === 2 &&
+        state.examCorrectCount === 1 &&
+        state.examStreak === 0 &&
+        elements.examFeedback.classList.contains("warn"),
+      {
+        answered: state.examAnsweredCount,
+        correct: state.examCorrectCount,
+        streak: state.examStreak
+      }
+    );
+
+    resetExamSession();
+    recordInteractionResult(
+      results,
+      "reset-clears-session",
+      state.examAnsweredCount === 0 &&
+        state.examCorrectCount === 0 &&
+        state.examStreak === 0 &&
+        state.examWords.length === sourceCount &&
+        Boolean(state.activeExamWord),
+      {
+        answered: state.examAnsweredCount,
+        correct: state.examCorrectCount,
+        streak: state.examStreak,
+        examWords: state.examWords.length
+      }
+    );
+
+    state.examCorrectCount = 10;
+    renderExamSessionPanel();
+    const bronzeOk = examAwardLevel() === "bronze" &&
+      examCardElement().classList.contains("award-bronze") &&
+      elements.examMedal.classList.contains("bronze");
+    state.examCorrectCount = 20;
+    renderExamSessionPanel();
+    const silverOk = examAwardLevel() === "silver" &&
+      examCardElement().classList.contains("award-silver") &&
+      elements.examMedal.classList.contains("silver");
+    state.examCorrectCount = 30;
+    renderExamSessionPanel();
+    const goldOk = examAwardLevel() === "gold" &&
+      examCardElement().classList.contains("award-gold") &&
+      elements.examMedal.classList.contains("gold");
+    recordInteractionResult(results, "award-thresholds", bronzeOk && silverOk && goldOk, {
+      bronzeOk,
+      silverOk,
+      goldOk
+    });
+    const medalLayout = examMedalLayoutStatus();
+    recordInteractionResult(results, "award-medal-layout", goldOk && medalLayout.pass, {
+      medalClass: elements.examMedal.className,
+      overlaps: medalLayout.overlaps.join("|")
+    });
+
+    resetExamSession();
+    state.examStreak = 4;
+    fillCorrectExamAnswerForSelfTest();
+    checkAnswer();
+    const celebrationOk = elements.examCelebration &&
+      !elements.examCelebration.classList.contains("hidden") &&
+      state.examStreak === 5;
+    recordInteractionResult(results, "five-streak-celebration", celebrationOk, {
+      streak: state.examStreak
+    });
+    hideExamCelebration();
+
+    startExam();
+    if (state.activeExamWord) {
+      state.examWords = [state.activeExamWord];
+      state.examIndex = 0;
+      renderExamQuestion();
+      fillCorrectExamAnswerForSelfTest();
+      checkAnswer();
+      nextExamQuestion();
+    }
+    recordInteractionResult(
+      results,
+      "completion-after-range",
+      state.examCompleted &&
+        !state.activeExamWord &&
+        elements.answerSlots.childElementCount === 0 &&
+        elements.letterBank.childElementCount === 0,
+      {
+        completed: state.examCompleted,
+        slots: elements.answerSlots.childElementCount,
+        tiles: elements.letterBank.childElementCount
+      }
+    );
+
+    resetExamSession();
+    setExamDifficulty("low");
+    setExamInitialMode("single", { skipExamRefresh: true });
+    clearFilters();
+    setMode("practice");
+    const marker = document.createElement("div");
+    marker.id = "examSessionTestResult";
+    marker.dataset.results = JSON.stringify(results);
+    marker.textContent = results.every((item) => item.pass) ? "PASS" : "FAIL";
+    document.body.appendChild(marker);
+  }, 1850);
+}
+
 function textNodeIsCoveredByBpmf(node) {
   let parent = node.parentElement;
   while (parent) {
@@ -2478,6 +3357,9 @@ function bindEvents() {
   elements.eraseButton.addEventListener("click", eraseLetter);
   elements.checkButton.addEventListener("click", checkAnswer);
   elements.nextExamButton.addEventListener("click", nextExamQuestion);
+  if (elements.resetExamSessionButton) {
+    elements.resetExamSessionButton.addEventListener("click", resetExamSession);
+  }
 }
 
 async function init() {
@@ -2492,6 +3374,8 @@ async function init() {
     state.filteredWords = state.words.slice();
     buildInitialFilter();
     buildTopicFilter();
+    selectAllExamInitials();
+    buildExamInitialScope();
     state.filterSignature = currentFilterSignature();
     updateStats();
     renderPracticeCard();
@@ -2506,6 +3390,8 @@ async function init() {
     maybeRunToolbarMatrixTest();
     maybeRunInteractionTest();
     maybeRunExamDifficultyTest();
+    maybeRunExamCustomInitialTest();
+    maybeRunExamSessionTest();
     maybeRunBpmfCoverageTest();
     maybeRunAudioPipelineTest();
   } catch (error) {
