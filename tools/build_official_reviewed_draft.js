@@ -5,13 +5,16 @@ const {
   pairsFromTextAndZhuyin,
   zhuyinForChineseText
 } = require("./zhuyin_utils");
+const {
+  getImportConfig
+} = require("./official_import_config");
 
-const root = path.resolve(__dirname, "..");
-const importRoot = path.join(root, "data-imports", "official-word-bank");
-const queuePath = path.join(importRoot, "official-word-bank.review-queue.json");
-const draftPath = path.join(importRoot, "official-word-bank.reviewed-draft.json");
-const previewPath = path.join(importRoot, "words.official-draft.preview.json");
-const reportPath = path.join(importRoot, "reviewed-draft-report.md");
+const config = getImportConfig();
+const root = config.root;
+const queuePath = config.reviewQueuePath;
+const draftPath = config.reviewedDraftPath;
+const previewPath = config.reviewedDraftPreviewPath;
+const reportPath = config.reviewedDraftReportPath;
 const siteWordsPath = path.join(root, "site", "data", "words.json");
 
 function readJson(filePath) {
@@ -122,7 +125,7 @@ function main() {
       kind: "official-word-bank-reviewed-draft",
       status: "needs-review",
       generatedAt: nowIso(),
-      sourceQueue: "official-word-bank.review-queue.json",
+      sourceQueue: path.basename(queuePath),
       draftEntryCount: draftEntries.length,
       mergePolicy: "Draft entries are website-shape candidates, not approved merge entries."
     },

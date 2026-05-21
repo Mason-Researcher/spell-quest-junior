@@ -6,11 +6,14 @@ import sys
 
 import pandas as pd
 
+from official_import_config import get_import_config
+
 
 ROOT = Path(__file__).resolve().parents[1]
-IMPORT_ROOT = ROOT / "data-imports" / "official-word-bank"
-RAW_PATH = IMPORT_ROOT / "official-word-bank.raw.json"
-QUEUE_PATH = IMPORT_ROOT / "official-word-bank.review-queue.json"
+IMPORT_CONFIG = get_import_config()
+IMPORT_ROOT = IMPORT_CONFIG.import_root
+RAW_PATH = IMPORT_CONFIG.raw_path
+QUEUE_PATH = IMPORT_CONFIG.review_queue_path
 SITE_WORDS_PATH = ROOT / "site" / "data" / "words.json"
 
 REQUIRED_COLUMNS = [
@@ -29,7 +32,7 @@ REQUIRED_COLUMNS = [
     "reviewChecklist",
 ]
 
-ALLOWED_ACTIONS = {"already-live", "needs-review"}
+ALLOWED_ACTIONS = {"already-live", "needs-review", "source-duplicate"}
 
 
 def read_json(path: Path) -> object:
@@ -72,6 +75,13 @@ def main() -> None:
     raw_frame = pd.DataFrame(raw_entries)
     queue_frame = pd.DataFrame(queue_entries)
     site_frame = pd.DataFrame(site_words)
+    if len(raw_frame) == 0 and len(queue_frame) == 0:
+        print("PASSED")
+        print("raw_entries=0")
+        print("queue_entries=0")
+        print("already_live=0")
+        print("needs_review=0")
+        return
     if len(raw_frame) != len(queue_frame):
         messages.append(f"Queue count does not match raw count: {len(queue_frame)} != {len(raw_frame)}")
     missing = [column for column in REQUIRED_COLUMNS if column not in queue_frame.columns]
@@ -100,6 +110,7 @@ def main() -> None:
     queue_frame["expectedExistingId"] = queue_frame["word"].map(lambda word: site_word_map.get(normalize_word(word)))
     already_live = queue_frame[queue_frame["action"] == "already-live"].copy()
     needs_review = queue_frame[queue_frame["action"] == "needs-review"].copy()
+    source_duplicate = queue_frame[queue_frame["action"] == "source-duplicate"].copy()
     needs_review["candidateId"] = needs_review["candidate"].map(get_candidate_id)
     missing_existing = already_live.loc[already_live["expectedExistingId"].isna(), "sourceKey"].tolist()
     if missing_existing:
@@ -121,6 +132,14 @@ def main() -> None:
     ].tolist()
     if already_live_bad_id:
         messages.append(f"already-live entries have wrong existingSiteId: {already_live_bad_id[:20]}")
+    unexpected_duplicate_existing = source_duplicate.loc[source_duplicate["existingSiteId"].notna(), "sourceKey"].tolist()
+    if unexpected_duplicate_existing:
+        messages.append(f"source-duplicate entries should not point to site ids: {unexpected_duplicate_existing[:20]}")
+    if len(source_duplicate) > 0:
+        source_duplicate["candidateStatus"] = source_duplicate["candidate"].map(get_candidate_status)
+        bad_duplicate_status = source_duplicate.loc[source_duplicate["candidateStatus"] != "source_duplicate", "sourceKey"].tolist()
+        if bad_duplicate_status:
+            messages.append(f"source-duplicate entries have wrong candidate reviewStatus: {bad_duplicate_status[:20]}")
     site_ids = set(site_frame["id"].astype(str).tolist()) if "id" in site_frame.columns else set()
     duplicate_candidate_ids = needs_review.loc[needs_review["candidateId"].duplicated(), "candidateId"].tolist()
     if duplicate_candidate_ids:
@@ -142,6 +161,7 @@ def main() -> None:
     print(f"queue_entries={len(queue_frame)}")
     print(f"already_live={len(already_live)}")
     print(f"needs_review={len(needs_review)}")
+    print(f"source_duplicate={len(source_duplicate)}")
 
 
 if __name__ == "__main__":

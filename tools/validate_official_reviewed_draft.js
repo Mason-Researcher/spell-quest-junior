@@ -7,12 +7,15 @@ const {
   textFromPairs,
   zhuyinForChineseText
 } = require("./zhuyin_utils");
+const {
+  getImportConfig
+} = require("./official_import_config");
 
-const root = path.resolve(__dirname, "..");
-const importRoot = path.join(root, "data-imports", "official-word-bank");
-const draftPath = path.join(importRoot, "official-word-bank.reviewed-draft.json");
-const previewPath = path.join(importRoot, "words.official-draft.preview.json");
-const queuePath = path.join(importRoot, "official-word-bank.review-queue.json");
+const config = getImportConfig();
+const root = config.root;
+const draftPath = config.reviewedDraftPath;
+const previewPath = config.reviewedDraftPreviewPath;
+const queuePath = config.reviewQueuePath;
 const siteWordsPath = path.join(root, "site", "data", "words.json");
 
 const requiredFields = [
@@ -204,9 +207,17 @@ function main() {
   if (entries.length !== expectedCount) {
     messages.push(`Draft count mismatch: ${entries.length} != ${expectedCount}`);
   }
-  const expectedPreviewCount = allowSiteCollisions ? siteWords.length : siteWords.length + entries.length;
-  if (previewWords.length !== expectedPreviewCount) {
-    messages.push(`Preview count mismatch: ${previewWords.length} != ${expectedPreviewCount}`);
+  if (allowSiteCollisions) {
+    const previewIds = new Set(previewWords.map((word) => String(word.id)));
+    const missingPreviewIds = entries.filter((entry) => !previewIds.has(String(entry.id))).map((entry) => entry.id);
+    if (missingPreviewIds.length > 0) {
+      messages.push(`Preview is missing draft ids: ${missingPreviewIds.slice(0, 20).join(", ")}`);
+    }
+  } else {
+    const expectedPreviewCount = siteWords.length + entries.length;
+    if (previewWords.length !== expectedPreviewCount) {
+      messages.push(`Preview count mismatch: ${previewWords.length} != ${expectedPreviewCount}`);
+    }
   }
   validateUniqueIds(entries, siteWords, messages, allowSiteCollisions);
   validateNoDuplicateWords(entries, siteWords, messages, allowSiteCollisions);

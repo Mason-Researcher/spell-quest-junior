@@ -1,9 +1,9 @@
 (function () {
   "use strict";
 
-  const CANDIDATE_URL = "data/review/official-word-bank.auto-candidates.json";
-  const STORAGE_KEY = "spellQuestOfficialReviewWorkbench:v1";
-  const EXPORT_FILE_NAME = "official-word-bank.reviewed.json";
+  const DEFAULT_CANDIDATE_URL = "data/review/official-word-bank.auto-candidates.json";
+  const MANIFEST_URL = "data/review/review-workbench-manifest.json";
+  const STORAGE_KEY_PREFIX = "spellQuestOfficialReviewWorkbench:v1:";
   const FORBIDDEN_TEXT = [
     "todo",
     "tbd",
@@ -38,7 +38,11 @@
     entryById: new Map(),
     progress: createEmptyProgress(),
     visibleIds: [],
-    activeId: ""
+    activeId: "",
+    candidateUrl: DEFAULT_CANDIDATE_URL,
+    candidateFileName: "official-word-bank.auto-candidates.json",
+    exportFileName: "official-word-bank.reviewed.json",
+    storageKey: `${STORAGE_KEY_PREFIX}${DEFAULT_CANDIDATE_URL}`
   };
 
   const els = {};
@@ -382,12 +386,12 @@
   function saveProgress() {
     state.progress.activeId = state.activeId;
     state.progress.updatedAt = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.progress));
+    localStorage.setItem(state.storageKey, JSON.stringify(state.progress));
   }
 
   function loadProgress() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(state.storageKey);
       if (!stored) {
         return createEmptyProgress();
       }
@@ -821,7 +825,7 @@
           status: "approved",
           generatedAt: new Date().toISOString(),
           generatedBy: "local-review-workbench",
-          sourceCandidateFile: "official-word-bank.auto-candidates.json",
+          sourceCandidateFile: state.candidateFileName,
           approvedCount: entries.length,
           policy: "Only human approved entries may be imported into official-word-bank.reviewed.json."
         },
@@ -855,7 +859,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = EXPORT_FILE_NAME;
+    link.download = state.exportFileName;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -884,7 +888,7 @@
       return;
     }
     state.progress = createEmptyProgress();
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(state.storageKey);
     state.activeId = state.visibleIds[0] || "";
     renderAll(true);
   }
@@ -914,10 +918,39 @@
     els.clearLocalButton.addEventListener("click", clearLocalProgress);
   }
 
+  function isSafeBankName(value) {
+    const text = trimText(value);
+    if (!text) {
+      return false;
+    }
+    for (const char of text) {
+      const code = char.charCodeAt(0);
+      const upper = code >= 65 && code <= 90;
+      const lower = code >= 97 && code <= 122;
+      const number = code >= 48 && code <= 57;
+      if (!upper && !lower && !number && char !== "-" && char !== "_") {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function applyCandidateUrl(candidateUrl) {
+    state.candidateUrl = candidateUrl;
+    const parts = state.candidateUrl.split("/");
+    state.candidateFileName = parts[parts.length - 1] || state.candidateFileName;
+    state.exportFileName = state.candidateFileName.replace(".auto-candidates.json", ".reviewed.json");
+    if (state.exportFileName === state.candidateFileName) {
+      state.exportFileName = `${state.candidateFileName}.approved.json`;
+    }
+    state.storageKey = `${STORAGE_KEY_PREFIX}${state.candidateUrl}`;
+  }
+
   async function loadCandidateData() {
-    const response = await fetch(CANDIDATE_URL, { cache: "no-store" });
+    await loadWorkbenchManifest();
+    const response = await fetch(state.candidateUrl, { cache: "no-store" });
     if (!response.ok) {
-      throw new Error(`找不到 ${CANDIDATE_URL}，請先執行 npm run prepare:review-workbench。`);
+      throw new Error(`找不到 ${state.candidateUrl}，請先執行 npm run prepare:review-workbench。`);
     }
     const payload = await response.json();
     if (!payload || !Array.isArray(payload.entries) || payload.entries.length === 0) {
@@ -933,6 +966,29 @@
     state.entryById = new Map();
     for (const entry of state.entries) {
       state.entryById.set(entry.id, entry);
+    }
+    document.body.dataset.candidateUrl = state.candidateUrl;
+  }
+
+  async function loadWorkbenchManifest() {
+    const params = new URLSearchParams(window.location.search);
+    const bank = trimText(params.get("bank"));
+    if (isSafeBankName(bank)) {
+      applyCandidateUrl(`data/review/${bank}.auto-candidates.json`);
+      return;
+    }
+    try {
+      const response = await fetch(MANIFEST_URL, { cache: "no-store" });
+      if (!response.ok) {
+        return;
+      }
+      const manifest = await response.json();
+      if (!manifest || typeof manifest.candidateData !== "string" || !manifest.candidateData.trim()) {
+        return;
+      }
+      applyCandidateUrl(manifest.candidateData.trim());
+    } catch (error) {
+      applyCandidateUrl(DEFAULT_CANDIDATE_URL);
     }
   }
 
@@ -995,13 +1051,14 @@
       await loadCandidateData();
       const params = new URLSearchParams(window.location.search);
       if (params.has("reviewreset")) {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(state.storageKey);
       }
       state.progress = loadProgress();
       fillLetterFilter();
       state.activeId = state.progress.activeId || state.entries[0].id;
       renderAll(true);
       els.loadStatus.textContent = "審核資料已載入。";
+      els.loadStatus.textContent = `Loaded: ${state.candidateFileName}`;
       if (params.has("reviewtest")) {
         runReviewSelfTest();
       }

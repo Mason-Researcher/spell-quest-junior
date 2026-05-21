@@ -10,5 +10,10 @@ data-imports/official-word-bank/*.preview.json
 data-imports/official-word-bank/*.jpg
 data-imports/official-word-bank/official-word-bank.reviewed.from-workbench.json
 data-imports/official-word-bank/recovered-review-progress.json
+data-imports/efgh-word-bank/source/
+data-imports/efgh-word-bank/extracted-pages/
+data-imports/efgh-word-bank/*.preview.json
+data-imports/efgh-word-bank/*.provider-requests.jsonl
+data-imports/efgh-word-bank/efgh-word-bank.reviewed.from-workbench.json
 site/data/*.before-official-merge.json
 site/data/review/*.json

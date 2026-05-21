@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "kind": "official-word-bank-source-manifest",
+    "sourcePdf": "C:\\Users\\hch12\\Downloads\\????\\EFGH-????.pdf",
+    "sourcePdfCopy": "source/EFGH-????.pdf",
+    "sourcePdfSha256": "bd7befcb9157bc8b5f481871b9080c2f163659a20246bc08d729ba768e344cec",
+    "createdAt": "2026-05-20T14:10:49+00:00",
+    "pdfType": "image-only"
+  },
+  "pages": [
+    {
+      "page": 1,
+      "imagePath": "extracted-pages/page-001.jpg",
+      "filter": "DCTDecode",
+      "width": 2001,
+      "height": 3018,
+      "sha256": "61f7ce5ba3cbae84f49b25caf133434a4657e1c7ca1cdbf381afffe8490f2e8c"
+    },
+    {
+      "page": 2,
+      "imagePath": "extracted-pages/page-002.jpg",
+      "filter": "DCTDecode",
+      "width": 1620,
+      "height": 2360,
+      "sha256": "4454311f241b10417d3faf3f4fea26ad0616e334003cbd1637117b9fd0cfaa7d"
+    },
+    {
+      "page": 3,
+      "imagePath": "extracted-pages/page-003.jpg",
+      "filter": "DCTDecode",
+      "width": 1947,
+      "height": 2826,
+      "sha256": "ed2982166bb86b286ee322a983bbc7edeae8ab88a905095c3954177cc457ffb0"
+    },
+    {
+      "page": 4,
+      "imagePath": "extracted-pages/page-004.jpg",
+      "filter": "DCTDecode",
+      "width": 1946,
+      "height": 2862,
+      "sha256": "611776efcb7cb62f74dab9feb0a3b111b35681d7fbba83d12130fd8ccb37b537"
+    },
+    {
+      "page": 5,
+      "imagePath": "extracted-pages/page-005.jpg",
+      "filter": "DCTDecode",
+      "width": 1716,
+      "height": 2389,
+      "sha256": "6b37b3acedfb79b6f415e7c4e5e1703fecc6fb81b442594cfe8fd84ca713a698"
+    },
+    {
+      "page": 6,
+      "imagePath": "extracted-pages/page-006.jpg",
+      "filter": "DCTDecode",
+      "width": 1688,
+      "height": 2391,
+      "sha256": "b795e018705ea20c91d8dfc92cf06f52875ab793d8617bb01fadd21a902a5b6a"
+    },
+    {
+      "page": 7,
+      "imagePath": "extracted-pages/page-007.jpg",
+      "filter": "DCTDecode",
+      "width": 1799,
+      "height": 2535,
+      "sha256": "20458c55901375dd073b996eb9b7973f759ca94fe8f9cddc48a359aa73cb8d1b"
+    },
+    {
+      "page": 8,
+      "imagePath": "extracted-pages/page-008.jpg",
+      "filter": "DCTDecode",
+      "width": 1809,
+      "height": 2489,
+      "sha256": "da08a51602576d58ca77762cd4927c99b5357950914333bea5eede0560b37e54"
+    },
+    {
+      "page": 9,
+      "imagePath": "extracted-pages/page-009.jpg",
+      "filter": "DCTDecode",
+      "width": 1817,
+      "height": 2553,
+      "sha256": "67b73cb298551ed5e6fb8cf9ee1c0060e9a545bd861f85b9d574262b29a5d738"
+    },
+    {
+      "page": 10,
+      "imagePath": "extracted-pages/page-010.jpg",
+      "filter": "DCTDecode",
+      "width": 1855,
+      "height": 2630,
+      "sha256": "cfb7a4e70a4563558de2891c83f31bfc0b7e8a43b00c13499cd30bd8c8123866"
+    },
+    {
+      "page": 11,
+      "imagePath": "extracted-pages/page-011.jpg",
+      "filter": "DCTDecode",
+      "width": 1833,
+      "height": 2791,
+      "sha256": "d619d16cf44da23566ddb50441e5cd28ae6c15702dc8e8689bf6b57bbff93435"
+    },
+    {
+      "page": 12,
+      "imagePath": "extracted-pages/page-012.jpg",
+      "filter": "DCTDecode",
+      "width": 1879,
+      "height": 2796,
+      "sha256": "b5cf413e86a099eef3c91b74c6555c77d28c71e55365ad81532255491f37deec"
+    }
+  ]
+}

@@ -6,13 +6,16 @@ import json
 
 import pandas as pd
 
+from official_import_config import get_import_config
+
 
 ROOT = Path(__file__).resolve().parents[1]
-IMPORT_ROOT = ROOT / "data-imports" / "official-word-bank"
-RAW_PATH = IMPORT_ROOT / "official-word-bank.raw.json"
+IMPORT_CONFIG = get_import_config()
+IMPORT_ROOT = IMPORT_CONFIG.import_root
+RAW_PATH = IMPORT_CONFIG.raw_path
 SITE_WORDS_PATH = ROOT / "site" / "data" / "words.json"
-QUEUE_PATH = IMPORT_ROOT / "official-word-bank.review-queue.json"
-REPORT_PATH = IMPORT_ROOT / "review-queue-report.md"
+QUEUE_PATH = IMPORT_CONFIG.review_queue_path
+REPORT_PATH = IMPORT_CONFIG.review_queue_report_path
 
 
 TOPIC_RULES = [
@@ -103,15 +106,22 @@ def build_existing_word_map(site_words: list[dict[str, object]]) -> dict[str, di
 def build_queue_entries(raw_entries: list[dict[str, object]], site_words: list[dict[str, object]]) -> list[dict[str, object]]:
     existing_by_word = build_existing_word_map(site_words)
     entries: list[dict[str, object]] = []
+    seen_source_words: set[str] = set()
     for raw in raw_entries:
         meanings = split_meanings(raw.get("zhRaw"))
         primary_zh = meanings[0] if meanings else str(raw.get("zhRaw", "")).strip()
         topic, topic_zh = infer_topic(primary_zh)
-        existing = existing_by_word.get(normalize_word(raw.get("word")))
-        action = "already-live" if existing else "needs-review"
+        normalized_word = normalize_word(raw.get("word"))
+        source_duplicate = normalized_word in seen_source_words
+        seen_source_words.add(normalized_word)
+        existing = existing_by_word.get(normalized_word)
+        if source_duplicate:
+            action = "source-duplicate"
+        else:
+            action = "already-live" if existing else "needs-review"
         source_letter = raw.get("sourceLetter")
         source_no = raw.get("sourceNo")
-        candidate_id = str(existing.get("id")) if existing else proposed_official_id(source_letter, source_no)
+        candidate_id = str(existing.get("id")) if existing and not source_duplicate else proposed_official_id(source_letter, source_no)
         entry = {
             "sourceKey": source_key(source_letter, source_no),
             "sourceLetter": source_letter,
@@ -123,7 +133,7 @@ def build_queue_entries(raw_entries: list[dict[str, object]], site_words: list[d
             "sourcePage": raw.get("sourcePage"),
             "sourceRow": raw.get("sourceRow"),
             "action": action,
-            "existingSiteId": existing.get("id") if existing else None,
+            "existingSiteId": existing.get("id") if existing and not source_duplicate else None,
             "candidate": {
                 "id": candidate_id,
                 "word": raw.get("word"),
@@ -139,7 +149,7 @@ def build_queue_entries(raw_entries: list[dict[str, object]], site_words: list[d
                 "starred": raw.get("starred"),
                 "example": existing.get("example") if existing else "",
                 "usage": existing.get("usage") if existing else "",
-                "reviewStatus": "approved" if existing else "needs_review",
+                "reviewStatus": "source_duplicate" if source_duplicate else ("approved" if existing else "needs_review"),
             },
             "reviewChecklist": [
                 "confirm-source-spelling",
@@ -156,6 +166,26 @@ def build_queue_entries(raw_entries: list[dict[str, object]], site_words: list[d
 
 
 def build_report(entries: list[dict[str, object]], site_words: list[dict[str, object]]) -> str:
+    if not entries:
+        return "\n".join([
+            "# Official Word Bank Review Queue",
+            "",
+            f"- Generated at: {datetime.now(timezone.utc).isoformat()}",
+        "- Raw entries: 0",
+        "- Already live in site/data/words.json: 0",
+        "- Needs reviewed conversion: 0",
+        "- Source duplicates skipped: 0",
+        f"- Site-only words not found in official raw: {len(site_words)}",
+            "",
+            "## Counts By Letter",
+            "",
+            "| Letter | Already live | Needs review | Source duplicate |",
+            "| --- | ---: | ---: | ---: |",
+            "",
+            "## Next Step",
+            "",
+            "Transcribe raw source entries before generating reviewed drafts.",
+        ]) + "\n"
     frame = pd.DataFrame(entries)
     raw_words = set(frame["word"].astype(str).str.lower().tolist())
     site_only = [
@@ -177,16 +207,17 @@ def build_report(entries: list[dict[str, object]], site_words: list[dict[str, ob
         f"- Raw entries: {len(entries)}",
         f"- Already live in site/data/words.json: {int((frame['action'] == 'already-live').sum())}",
         f"- Needs reviewed conversion: {int((frame['action'] == 'needs-review').sum())}",
+        f"- Source duplicates skipped: {int((frame['action'] == 'source-duplicate').sum())}",
         f"- Site-only words not found in official raw: {len(site_only)}",
         "",
         "## Counts By Letter",
         "",
-        "| Letter | Already live | Needs review |",
-        "| --- | ---: | ---: |",
+        "| Letter | Already live | Needs review | Source duplicate |",
+        "| --- | ---: | ---: | ---: |",
     ]
     for row in by_letter:
         lines.append(
-            f"| {row.get('sourceLetter')} | {int(row.get('already-live', 0))} | {int(row.get('needs-review', 0))} |"
+            f"| {row.get('sourceLetter')} | {int(row.get('already-live', 0))} | {int(row.get('needs-review', 0))} | {int(row.get('source-duplicate', 0))} |"
         )
     lines.extend(["", "## Site-Only Words"])
     if site_only:
@@ -223,6 +254,15 @@ def main() -> None:
     }
     write_json(QUEUE_PATH, payload)
     REPORT_PATH.write_text(build_report(entries, site_words), encoding="utf-8")
+    if not entries:
+        print("PASSED")
+        print(f"queue={QUEUE_PATH}")
+        print(f"report={REPORT_PATH}")
+        print("raw_entries=0")
+        print("already_live=0")
+        print("needs_review=0")
+        print("source_duplicate=0")
+        return
     frame = pd.DataFrame(entries)
     print("PASSED")
     print(f"queue={QUEUE_PATH}")
@@ -230,6 +270,7 @@ def main() -> None:
     print(f"raw_entries={len(entries)}")
     print(f"already_live={int((frame['action'] == 'already-live').sum())}")
     print(f"needs_review={int((frame['action'] == 'needs-review').sum())}")
+    print(f"source_duplicate={int((frame['action'] == 'source-duplicate').sum())}")
 
 
 if __name__ == "__main__":

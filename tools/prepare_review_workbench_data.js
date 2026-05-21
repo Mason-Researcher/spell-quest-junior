@@ -3,6 +3,7 @@ const path = require("path");
 
 const {
   candidatePath,
+  importBasename,
   normalizeWord,
   readJson,
   root,
@@ -12,7 +13,8 @@ const {
 } = require("./official_candidate_common");
 
 const reviewDataDir = path.join(root, "site", "data", "review");
-const workbenchCandidatePath = path.join(reviewDataDir, "official-word-bank.auto-candidates.json");
+const workbenchCandidateFile = `${importBasename}.auto-candidates.json`;
+const workbenchCandidatePath = path.join(reviewDataDir, workbenchCandidateFile);
 const manifestPath = path.join(reviewDataDir, "review-workbench-manifest.json");
 
 function collectLetters(entries) {
@@ -83,7 +85,7 @@ function main() {
     generatedAt: new Date().toISOString(),
     localOnly: true,
     source: path.relative(root, candidatePath).split(path.sep).join("/"),
-    candidateData: "data/review/official-word-bank.auto-candidates.json",
+    candidateData: `data/review/${workbenchCandidateFile}`,
     candidateCount: entries.length,
     letters: collectLetters(entries)
   });

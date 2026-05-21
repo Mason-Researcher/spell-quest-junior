@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const {
+  importBasename,
   candidatePath,
   candidateReportPath,
   draftPath,
@@ -151,7 +152,7 @@ function main() {
       status: "machine-candidate",
       generatedAt: new Date().toISOString(),
       provider: options.provider,
-      sourceDraft: "official-word-bank.reviewed-draft.json",
+      sourceDraft: `${importBasename}.reviewed-draft.json`,
       candidateCount: candidates.length,
       approvalPolicy: "Generated candidates must remain machine_candidate until reviewed."
     },

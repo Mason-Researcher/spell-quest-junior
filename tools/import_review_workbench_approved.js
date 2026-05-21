@@ -3,13 +3,14 @@ const path = require("path");
 
 const {
   importRoot,
+  importBasename,
   readJson,
   root,
   writeJson
 } = require("./official_candidate_common");
 
-const officialReviewedPath = path.join(importRoot, "official-word-bank.reviewed.json");
-const previewPath = path.join(importRoot, "official-word-bank.reviewed.preview.json");
+const officialReviewedPath = path.join(importRoot, `${importBasename}.reviewed.json`);
+const previewPath = path.join(importRoot, `${importBasename}.reviewed.preview.json`);
 const validatorPath = path.join(root, "tools", "validate_official_reviewed_entries.js");
 
 function hasFlag(name) {

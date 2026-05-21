@@ -7,12 +7,15 @@ import sys
 
 import pandas as pd
 
+from official_import_config import get_import_config
+
 
 ROOT = Path(__file__).resolve().parents[1]
-IMPORT_ROOT = ROOT / "data-imports" / "official-word-bank"
-REVIEWED_PATH = IMPORT_ROOT / "official-word-bank.reviewed.json"
+IMPORT_CONFIG = get_import_config()
+IMPORT_ROOT = IMPORT_CONFIG.import_root
+REVIEWED_PATH = IMPORT_CONFIG.reviewed_path
 SITE_WORDS_PATH = ROOT / "site" / "data" / "words.json"
-PREVIEW_OUTPUT = IMPORT_ROOT / "words.official-merged.preview.json"
+PREVIEW_OUTPUT = IMPORT_CONFIG.merged_preview_path
 
 
 REQUIRED_COLUMNS = [

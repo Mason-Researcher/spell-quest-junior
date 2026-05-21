@@ -6,13 +6,18 @@ const {
   textFromPairs,
   zhuyinForChineseText
 } = require("./zhuyin_utils");
+const {
+  getImportConfig
+} = require("./official_import_config");
 
-const root = path.resolve(__dirname, "..");
-const importRoot = path.join(root, "data-imports", "official-word-bank");
-const draftPath = path.join(importRoot, "official-word-bank.reviewed-draft.json");
-const candidatePath = path.join(importRoot, "official-word-bank.auto-candidates.json");
-const candidateReportPath = path.join(importRoot, "auto-candidates-report.md");
-const providerRequestPath = path.join(importRoot, "official-word-bank.provider-requests.jsonl");
+const config = getImportConfig();
+const root = config.root;
+const importRoot = config.importRoot;
+const importBasename = config.basename;
+const draftPath = config.reviewedDraftPath;
+const candidatePath = config.autoCandidatesPath;
+const candidateReportPath = config.autoCandidatesReportPath;
+const providerRequestPath = config.providerRequestsPath;
 const siteWordsPath = path.join(root, "site", "data", "words.json");
 
 const BANNED_PLACEHOLDER_TEXT = [
@@ -275,6 +280,7 @@ module.exports = {
   draftPath,
   hasBopomofo,
   hasChinese,
+  importBasename,
   importRoot,
   normalizeWord,
   providerRequestPath,

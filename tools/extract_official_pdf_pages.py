@@ -17,6 +17,42 @@ RAW_PATH = IMPORT_ROOT / "official-word-bank.raw.json"
 REVIEWED_PATH = IMPORT_ROOT / "official-word-bank.reviewed.json"
 MANIFEST_PATH = IMPORT_ROOT / "source-manifest.json"
 REPORT_PATH = IMPORT_ROOT / "import-report.md"
+DEFAULT_IMPORT_SLUG = "official-word-bank"
+DEFAULT_BASENAME = "official-word-bank"
+
+
+def read_arg(name: str, fallback: str = "") -> str:
+    if name not in sys.argv:
+        return fallback
+    index = sys.argv.index(name)
+    if index + 1 >= len(sys.argv):
+        raise SystemExit(f"{name} needs a value.")
+    return sys.argv[index + 1]
+
+
+def read_source_pdf() -> Path:
+    if "--source" in sys.argv:
+        return Path(read_arg("--source"))
+    positional = [item for item in sys.argv[1:] if not item.startswith("--")]
+    if positional:
+        return Path(positional[0])
+    return DEFAULT_PDF
+
+
+def build_import_paths() -> dict[str, Path]:
+    import_root_text = read_arg("--import-root")
+    import_slug = read_arg("--import-slug", DEFAULT_IMPORT_SLUG)
+    basename = read_arg("--basename", DEFAULT_BASENAME)
+    import_root = Path(import_root_text) if import_root_text else ROOT / "data-imports" / import_slug
+    return {
+        "import_root": import_root,
+        "source_dir": import_root / "source",
+        "page_dir": import_root / "extracted-pages",
+        "raw_path": import_root / f"{basename}.raw.json",
+        "reviewed_path": import_root / f"{basename}.reviewed.json",
+        "manifest_path": import_root / "source-manifest.json",
+        "report_path": import_root / "import-report.md",
+    }
 
 
 def utc_now() -> str:
@@ -34,9 +70,9 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def ensure_dirs() -> None:
-    SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-    PAGE_DIR.mkdir(parents=True, exist_ok=True)
+def ensure_dirs(source_dir: Path, page_dir: Path) -> None:
+    source_dir.mkdir(parents=True, exist_ok=True)
+    page_dir.mkdir(parents=True, exist_ok=True)
 
 
 def find_marker(data: bytes, marker: bytes, start: int) -> int:
@@ -115,7 +151,7 @@ def build_empty_review_manifest(source_pdf: Path, pdf_hash: str, page_count: int
     }
 
 
-def write_report(source_pdf: Path, pdf_hash: str, pages: list[dict[str, object]]) -> None:
+def write_report(source_pdf: Path, pdf_hash: str, pages: list[dict[str, object]], report_path: Path, raw_path: Path, reviewed_path: Path) -> None:
     lines = [
         "# Official Word Bank Import Report",
         "",
@@ -126,7 +162,7 @@ def write_report(source_pdf: Path, pdf_hash: str, pages: list[dict[str, object]]
         "",
         "## Current Status",
         "",
-        "The PDF is image-based. Text must be transcribed into `official-word-bank.raw.json`, then reviewed into `official-word-bank.reviewed.json` before any merge.",
+        f"The PDF is image-based. Text must be transcribed into `{raw_path.name}`, then reviewed into `{reviewed_path.name}` before any merge.",
         "",
         "## Extracted Pages",
         "",
@@ -141,15 +177,23 @@ def write_report(source_pdf: Path, pdf_hash: str, pages: list[dict[str, object]]
         "- Every reviewed entry must include complete website fields.",
         "- Every Traditional Chinese field must include zhuyin and generated bpmf pairs before publication.",
     ]
-    REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> None:
-    source_pdf = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PDF
+    source_pdf = read_source_pdf()
     if not source_pdf.exists():
         raise SystemExit(f"PDF not found: {source_pdf}")
-    ensure_dirs()
-    copied_pdf = SOURCE_DIR / source_pdf.name
+    paths = build_import_paths()
+    import_root = paths["import_root"]
+    source_dir = paths["source_dir"]
+    page_dir = paths["page_dir"]
+    raw_path = paths["raw_path"]
+    reviewed_path = paths["reviewed_path"]
+    manifest_path = paths["manifest_path"]
+    report_path = paths["report_path"]
+    ensure_dirs(source_dir, page_dir)
+    copied_pdf = source_dir / source_pdf.name
     if source_pdf.resolve() != copied_pdf.resolve():
         shutil.copy2(source_pdf, copied_pdf)
     data = source_pdf.read_bytes()
@@ -160,7 +204,7 @@ def main() -> None:
         image_bytes = image["bytes"]
         filter_name = str(image["filter"])
         extension = ".jpg" if filter_name == "DCTDecode" else ".bin"
-        image_path = PAGE_DIR / f"page-{index:03d}{extension}"
+        image_path = page_dir / f"page-{index:03d}{extension}"
         image_path.write_bytes(image_bytes)
         width = None
         height = None
@@ -173,7 +217,7 @@ def main() -> None:
                 height = words[pos + 1]
         pages.append({
             "page": index,
-            "imagePath": str(image_path.relative_to(IMPORT_ROOT)).replace("\\", "/"),
+            "imagePath": str(image_path.relative_to(import_root)).replace("\\", "/"),
             "filter": filter_name,
             "width": int(width) if width and width.isdigit() else None,
             "height": int(height) if height and height.isdigit() else None,
@@ -183,25 +227,26 @@ def main() -> None:
         "metadata": {
             "kind": "official-word-bank-source-manifest",
             "sourcePdf": str(source_pdf),
-            "sourcePdfCopy": str(copied_pdf.relative_to(IMPORT_ROOT)).replace("\\", "/"),
+            "sourcePdfCopy": str(copied_pdf.relative_to(import_root)).replace("\\", "/"),
             "sourcePdfSha256": pdf_hash,
             "createdAt": utc_now(),
             "pdfType": "image-only",
         },
         "pages": pages,
     }
-    write_json(MANIFEST_PATH, manifest)
-    if not RAW_PATH.exists():
-        write_json(RAW_PATH, build_empty_raw_manifest(source_pdf, pdf_hash, len(pages)))
-    if not REVIEWED_PATH.exists():
-        write_json(REVIEWED_PATH, build_empty_review_manifest(source_pdf, pdf_hash, len(pages)))
-    write_report(source_pdf, pdf_hash, pages)
+    write_json(manifest_path, manifest)
+    if not raw_path.exists():
+        write_json(raw_path, build_empty_raw_manifest(source_pdf, pdf_hash, len(pages)))
+    if not reviewed_path.exists():
+        write_json(reviewed_path, build_empty_review_manifest(source_pdf, pdf_hash, len(pages)))
+    write_report(source_pdf, pdf_hash, pages, report_path, raw_path, reviewed_path)
     print("PASSED")
     print(f"source_pdf={source_pdf}")
     print(f"pages={len(pages)}")
-    print(f"manifest={MANIFEST_PATH}")
-    print(f"raw={RAW_PATH}")
-    print(f"reviewed={REVIEWED_PATH}")
+    print(f"import_root={import_root}")
+    print(f"manifest={manifest_path}")
+    print(f"raw={raw_path}")
+    print(f"reviewed={reviewed_path}")
 
 
 if __name__ == "__main__":

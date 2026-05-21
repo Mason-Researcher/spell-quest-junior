@@ -6,12 +6,15 @@ import sys
 
 import pandas as pd
 
+from official_import_config import get_import_config
+
 
 ROOT = Path(__file__).resolve().parents[1]
-IMPORT_ROOT = ROOT / "data-imports" / "official-word-bank"
-MANIFEST_PATH = IMPORT_ROOT / "source-manifest.json"
-RAW_PATH = IMPORT_ROOT / "official-word-bank.raw.json"
-REVIEWED_PATH = IMPORT_ROOT / "official-word-bank.reviewed.json"
+IMPORT_CONFIG = get_import_config()
+IMPORT_ROOT = IMPORT_CONFIG.import_root
+MANIFEST_PATH = IMPORT_CONFIG.source_manifest_path
+RAW_PATH = IMPORT_CONFIG.raw_path
+REVIEWED_PATH = IMPORT_CONFIG.reviewed_path
 SITE_WORDS_PATH = ROOT / "site" / "data" / "words.json"
 
 RAW_COLUMNS = [
@@ -65,6 +68,24 @@ def starts_with_expected_initial(value: object) -> bool:
     return first >= "A" and first <= "Z"
 
 
+def read_allowed_letters() -> set[str]:
+    text = read_text_flag("--allowed-letters")
+    letters: set[str] = set()
+    for char in text.upper():
+        if "A" <= char <= "Z":
+            letters.add(char)
+    return letters
+
+
+def read_text_flag(flag: str) -> str:
+    if flag not in sys.argv:
+        return ""
+    position = sys.argv.index(flag)
+    if position + 1 >= len(sys.argv):
+        raise ValueError(f"{flag} needs a value.")
+    return str(sys.argv[position + 1])
+
+
 def has_cjk(value: object) -> bool:
     for char in str(value or ""):
         code = ord(char)
@@ -97,10 +118,12 @@ def validate_raw(messages: list[str]) -> int:
     if not entries:
         return 0
     frame = pd.DataFrame(entries)
+    allow_source_duplicates = "--allow-source-duplicates" in sys.argv
     missing = [column for column in RAW_COLUMNS if column not in frame.columns]
     if missing:
         messages.append(f"Raw entries missing columns: {missing}")
         return len(frame)
+    allowed_letters = read_allowed_letters()
     frame["sourceKey"] = frame["sourceLetter"].astype(str) + frame["sourceNo"].astype(str)
     if frame["sourceKey"].duplicated().any():
         duplicates = frame.loc[frame["sourceKey"].duplicated(), "sourceKey"].tolist()
@@ -111,12 +134,26 @@ def validate_raw(messages: list[str]) -> int:
         if source_numbers != expected_numbers:
             missing_numbers = sorted(set(expected_numbers) - set(source_numbers))
             messages.append(f"Raw sourceNo is not continuous for {source_letter}. Missing: {missing_numbers[:20]}")
-    if frame["word"].str.lower().duplicated().any():
+    if frame["word"].str.lower().duplicated().any() and not allow_source_duplicates:
         duplicates = frame.loc[frame["word"].str.lower().duplicated(), "word"].tolist()
         messages.append(f"Raw duplicate words: {duplicates}")
     bad_words = frame.loc[~frame["word"].map(is_alpha_word), "word"].tolist()
     if bad_words:
         messages.append(f"Raw unsupported word spelling: {bad_words[:20]}")
+    if allowed_letters:
+        invalid_letters = sorted(set(frame["sourceLetter"].astype(str).str.upper().tolist()) - allowed_letters)
+        if invalid_letters:
+            messages.append(f"Raw sourceLetter outside allowed letters: {invalid_letters}")
+        mismatched_initials = frame.loc[
+            frame.apply(lambda row: str(row["word"] or "").strip()[:1].upper() != str(row["sourceLetter"]).upper(), axis=1),
+            "word",
+        ].tolist()
+        if mismatched_initials:
+            messages.append(f"Raw words do not match sourceLetter: {mismatched_initials[:20]}")
+    if "--require-transcribed-status" in sys.argv:
+        bad_status = frame.loc[frame["reviewStatus"].astype(str) != "transcribed", "word"].tolist()
+        if bad_status:
+            messages.append(f"Raw entries must have reviewStatus=transcribed: {bad_status[:20]}")
     no_cjk = frame.loc[~frame["zhRaw"].map(has_cjk), "word"].tolist()
     if no_cjk:
         messages.append(f"Raw entries without CJK zhRaw: {no_cjk[:20]}")

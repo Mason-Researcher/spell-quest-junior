@@ -1,17 +1,11 @@
 const {
   candidatePath,
+  draftPath,
   normalizeWord,
   readJson,
   siteWordsPath,
   validateCandidateEntry
 } = require("./official_candidate_common");
-
-const draftPath = require("path").join(
-  require("path").resolve(__dirname, ".."),
-  "data-imports",
-  "official-word-bank",
-  "official-word-bank.reviewed-draft.json"
-);
 
 function validateCounts(entries, draftEntries, messages) {
   if (entries.length !== draftEntries.length) {
